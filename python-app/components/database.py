@@ -1,40 +1,57 @@
-import sqlite3 as sq
+import asyncpg
 
-db = sq.connect('tg.db')
-cur = db.cursor()
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
-
-async def db_start():
-    cur.execute(
-        "CREATE TABLE IF NOT EXISTS users("
-        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-        "tg_id INTEGER, "
-        "fio TEXT, "
-        "contact TEXT, "
-        "email TEXT, "
-        "birthday TEXT, "
-        "product TEXT, "
-        "photo TEXT, "
-        "lucky_ticket TEXT)"
-    )
+DB_CONFIG = {
+    'user': os.getenv('PG_USER'),
+    'password': os.getenv('PG_PASS'),
+    'database': os.getenv('PG_DB'),
+    'host': os.getenv('PG_HOST'),
+    'port': os.getenv('PG_PORT', 5432)
+}
 
 
-async def cmd_start_db(user_id):
-    user = cur.execute("SELECT * FROM users WHERE tg_id == ({key})".format(key=user_id)).fetchone()
-    if not user:
-        cur.execute("INSERT INTO users (tg_id) VALUES ({key})".format(key=user_id))
-        db.commit()
+async def create_db_pool():
+    return await asyncpg.create_pool(**DB_CONFIG)
 
 
-async def add_item(state, user_id):
-    async with state.proxy() as data:
-        cur.execute(
+async def db_start(pool):
+    async with pool.acquire() as conn:
+        await conn.execute(
             """
-            UPDATE users
-            SET fio = ?, contact = ?, email = ?, birthday = ?, product = ?, photo = ?, lucky_ticket = ?
-            WHERE tg_id = ?
-            """,
-            (
+            CREATE TABLE IF NOT EXISTS users(
+                id SERIAL PRIMARY KEY,
+                tg_id BIGINT UNIQUE,
+                fio TEXT,
+                contact TEXT,
+                email TEXT,
+                birthday TEXT,
+                product TEXT,
+                photo TEXT,
+                lucky_ticket TEXT
+            )
+            """
+        )
+
+
+async def cmd_start_db(pool, user_id):
+    async with pool.acquire() as conn:
+        user = await conn.fetchrow("SELECT * FROM users WHERE tg_id = $1", user_id)
+        if not user:
+            await conn.execute("INSERT INTO users (tg_id) VALUES ($1)", user_id)
+
+
+async def add_item(pool, state, user_id):
+    async with pool.acquire() as conn:
+        async with state.proxy() as data:
+            await conn.execute(
+                """
+                UPDATE users
+                SET fio = $1, contact = $2, email = $3, birthday = $4, product = $5, photo = $6, lucky_ticket = $7
+                WHERE tg_id = $8
+                """,
                 data['fio'],
                 data['contact'],
                 data['email'],
@@ -44,49 +61,45 @@ async def add_item(state, user_id):
                 data['lucky_ticket'],
                 user_id
             )
-        )
-        db.commit()
 
 
-async def additional_item(state, user_id):
-    async with state.proxy() as data:
-        cur.execute(
-            """
-            UPDATE users
-            SET photo = ?, lucky_ticket = ?
-            WHERE tg_id = ?
-            """,
-            (
+async def additional_item(pool, state, user_id):
+    async with pool.acquire() as conn:
+        async with state.proxy() as data:
+            await conn.execute(
+                """
+                UPDATE users
+                SET photo = $1, lucky_ticket = $2
+                WHERE tg_id = $3
+                """,
                 data['photo'],
                 data['lucky_ticket'],
                 user_id
             )
+
+
+async def check_advanced_state(pool, user_id):
+    async with pool.acquire() as conn:
+        result = await conn.fetchrow(
+            """
+            SELECT fio, contact, email, birthday, product, photo, lucky_ticket
+            FROM users
+            WHERE tg_id = $1
+            """,
+            user_id
         )
-        db.commit()
+        if result and all(result):
+            return True
+        return False
 
 
-async def check_advanced_state(user_id):
-    cur.execute(
-        """
-        SELECT fio, contact, email, birthday, product, photo, lucky_ticket
-        FROM users
-        WHERE tg_id = ?
-        """,
-        (user_id,)
-    )
-    result = cur.fetchone()
-    if result and all(result):
-        return True
-    return False
-
-
-async def personal_accoutn(user_id):
-    cur.execute(
-        """
-        SELECT fio, lucky_ticket
-        FROM users
-        WHERE tg_id = ?
-        """,
-        (user_id,)
-    )
-    return cur.fetchone()
+async def personal_account(pool, user_id):
+    async with pool.acquire() as conn:
+        return await conn.fetchrow(
+            """
+            SELECT fio, lucky_ticket
+            FROM users
+            WHERE tg_id = $1
+            """,
+            user_id
+        )
