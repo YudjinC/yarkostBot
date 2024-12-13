@@ -1,13 +1,13 @@
-version: '3.8'
+version: '3.3'
 
 services:
   app:
     build:
-      context: python_app/
-      dockerfile: python_app/dockerfile
+      context: python-app/
+      dockerfile: python-app/dockerfile
     container_name: yarkostBot
     env_file:
-      - python_app/.env
+      - python-app/.env
     depends_on:
       - pg
 
