@@ -9,8 +9,9 @@ from handlers.advanced import advanced_stage
 
 
 async def cmd_start(message: types.Message):
-    await db.cmd_start_db(message.from_user.id)
-    advanced = await db.check_advanced_state(message.from_user.id)
+    pool = await message.bot.get('pg_pool')
+    await db.cmd_start_db(pool, message.from_user.id)
+    advanced = await db.check_advanced_state(pool, message.from_user.id)
     if advanced:
         await botStages.Screenplay.advanced.set()
         await advanced_stage(message)

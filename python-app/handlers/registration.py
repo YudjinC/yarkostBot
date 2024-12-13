@@ -110,6 +110,7 @@ async def add_photo(message: types.Message, state: FSMContext):
 
 
 async def add_lucky_ticket(message: types.Message, state: FSMContext):
+    pool = await message.bot.get('pg_pool')
     await message.answer(
         f'Начинаю проверку, секундочку...'
     )
@@ -120,7 +121,7 @@ async def add_lucky_ticket(message: types.Message, state: FSMContext):
     )
     async with state.proxy() as data:
         data['lucky_ticket'] = random_string
-    await db.add_item(state, message.from_user.id)
+    await db.add_item(pool, state, message.from_user.id)
     await botStages.Screenplay.next()
     await advanced_stage(message)
 

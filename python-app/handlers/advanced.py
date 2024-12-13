@@ -9,8 +9,10 @@ from modules import botStages
 import random
 import string
 
+
 async def personal_account(message: types.Message):
-    personal_account_data = await db.personal_accoutn(message.from_user.id)
+    pool = await message.bot.get('pg_pool')
+    personal_account_data = await db.personal_account(pool, message.from_user.id)
     await message.answer(
         f'{personal_account_data[0]}, это ваш личный кабинет!\n\n'
         f'Номера ваших счастливых билетиков:\n'
@@ -45,6 +47,7 @@ async def additional_photo(message: types.Message, state: FSMContext):
 
 
 async def additional_lucky_ticket(message: types.Message, state: FSMContext):
+    pool = await message.bot.get('pg_pool')
     await message.answer(
         f'Начинаю проверку, секундочку...'
     )
@@ -55,7 +58,7 @@ async def additional_lucky_ticket(message: types.Message, state: FSMContext):
     )
     async with state.proxy() as data:
         data['lucky_ticket'] = random_string
-    await db.additional_item(state, message.from_user.id)
+    await db.additional_item(pool, state, message.from_user.id)
     await botStages.Screenplay.advanced.set()
     await advanced_stage(message)
 

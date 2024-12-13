@@ -18,10 +18,18 @@ dp = Dispatcher(bot=bot, storage=storage)
 
 
 async def on_startup(_):
-    await db.db_start()
+    pool = await db.create_db_pool()
+    bot['pg_pool'] = pool
+    await db.db_start(pool)
     print('Бот стартовал')
+    register_handlers(dp)
 
-register_handlers(dp)
+
+async def on_shutdown():
+    pool = bot.get('pg_pool')
+    if pool:
+        await pool.close()
+    print("Пул соединений закрыт")
 
 if __name__ == '__main__':
-    executor.start_polling(dp, on_startup=on_startup, skip_updates=True)
+    executor.start_polling(dp, on_startup=on_startup, on_shutdown=on_shutdown, skip_updates=True)
