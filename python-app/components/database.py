@@ -8,7 +8,8 @@ DB_CONFIG = {
     'user': os.getenv('PG_USER'),
     'password': os.getenv('PG_PASS'),
     'database': os.getenv('PG_DB'),
-    'host': os.getenv('PG_HOST')
+    'host': os.getenv('PG_HOST'),
+    'port': os.getenv('PG_PORT', 5432)
 }
 
 

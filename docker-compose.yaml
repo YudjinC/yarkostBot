@@ -4,7 +4,7 @@ services:
   app:
     build:
       context: python-app/
-      dockerfile: python-app/dockerfile
+      dockerfile: Dockerfile
     container_name: yarkostBot
     env_file:
       - python-app/.env
