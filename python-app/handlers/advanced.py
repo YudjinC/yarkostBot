@@ -14,9 +14,9 @@ async def personal_account(message: types.Message):
     pool = await message.bot.get('pg_pool')
     personal_account_data = await db.personal_account(pool, message.from_user.id)
     await message.answer(
-        f'{personal_account_data[0]}, это ваш личный кабинет!\n\n'
+        f'{personal_account_data["fio"]}, это ваш личный кабинет!\n\n'
         f'Номера ваших счастливых билетиков:\n'
-        f'{personal_account_data[1]}\n'
+        f'{personal_account_data["tickets"]}\n'
         f'Следи за результатами в группе @yarkostorganic !'
     )
 

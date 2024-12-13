@@ -28,9 +28,9 @@ async def db_start(pool):
                 contact TEXT,
                 email TEXT,
                 birthday TEXT,
-                product TEXT,
-                photo TEXT,
-                lucky_ticket TEXT
+                product TEXT[],
+                photo TEXT[],
+                lucky_ticket TEXT[]
             )
             """
         )
@@ -49,16 +49,22 @@ async def add_item(pool, state, user_id):
             await conn.execute(
                 """
                 UPDATE users
-                SET fio = $1, contact = $2, email = $3, birthday = $4, product = $5, photo = $6, lucky_ticket = $7
+                SET fio = $1,
+                    contact = $2,
+                    email = $3,
+                    birthday = $4,
+                    product = COALESCE(product, ARRAY[]::TEXT[]) || $5,
+                    photo = COALESCE(photo, ARRAY[]::TEXT[]) || $6,
+                    lucky_ticket = COALESCE(lucky_ticket, ARRAY[]::TEXT[]) || $7
                 WHERE tg_id = $8
                 """,
                 data['fio'],
                 data['contact'],
                 data['email'],
                 data['birthday'],
-                data['product'],
-                data['photo'],
-                data['lucky_ticket'],
+                [data['product']],
+                [data['photo']],
+                [data['lucky_ticket']],
                 user_id
             )
 
@@ -69,11 +75,14 @@ async def additional_item(pool, state, user_id):
             await conn.execute(
                 """
                 UPDATE users
-                SET photo = $1, lucky_ticket = $2
-                WHERE tg_id = $3
+                SET product = COALESCE(product, ARRAY[]::TEXT[]) || $1,
+                    photo = $2,
+                    lucky_ticket = $3
+                WHERE tg_id = $4
                 """,
-                data['photo'],
-                data['lucky_ticket'],
+                [data['product']],
+                [data['photo']],
+                [data['lucky_ticket']],
                 user_id
             )
 
@@ -88,14 +97,17 @@ async def check_advanced_state(pool, user_id):
             """,
             user_id
         )
-        if result and all(result):
-            return True
+        if result:
+            return all(
+                field and (not isinstance(field, list) or len(field) > 0)
+                for field in result
+            )
         return False
 
 
 async def personal_account(pool, user_id):
     async with pool.acquire() as conn:
-        return await conn.fetchrow(
+        result = await conn.fetchrow(
             """
             SELECT fio, lucky_ticket
             FROM users
@@ -103,3 +115,9 @@ async def personal_account(pool, user_id):
             """,
             user_id
         )
+        lucky_tickets = result["lucky_ticket"]
+        tickets_text = "\n".join(lucky_tickets)
+        return {
+            "fio": result['fio'],
+            "tickets": tickets_text
+        }
