@@ -1,6 +1,7 @@
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InputFile
+from aiogram.types import ReplyKeyboardRemove
 
 from components import database as db
 from components import keyboards as kb
@@ -14,22 +15,33 @@ async def personal_account(message: types.Message):
     pool = await message.bot.get('pg_pool')
     personal_account_data = await db.personal_account(pool, message.from_user.id)
     await message.answer(
-        f'{personal_account_data[0]}, это ваш личный кабинет!\n\n'
+        f'{personal_account_data["fio"]}, это ваш личный кабинет!\n\n'
         f'Номера ваших счастливых билетиков:\n'
-        f'{personal_account_data[1]}\n'
+        f'{personal_account_data["tickets"]}\n'
         f'Следи за результатами в группе @yarkostorganic !'
     )
 
 
 async def additional_play(message: types.Message,  state: FSMContext):
+    await message.answer(
+        f'Выберите купленный товар и нажмите на кнопку!',
+        reply_markup=kb.productKeyboard
+    )
+    await botStages.Screenplay.advanced_product.set()
+
+
+async def additional_product(message: types.Message,  state: FSMContext):
+    async with state.proxy() as data:
+        data['product'] = message.text
     await message.bot.send_photo(
         message.chat.id,
         photo=InputFile('photos/marketplaces.jpg'),
         caption=f'💖 Оставьте честный отзыв о спрей-гидролат от YARKOST\n'
                 f'📎Прикрепите здесь 2 скрина:\n'
                 f'чек об оплате с маркетплейса и отзыв с артикулом товара, воспользовавшись скрепкой около клавиатуры.',
+        reply_markup=ReplyKeyboardRemove()
     )
-    await botStages.Screenplay.advanced_photo.set()
+    await botStages.Screenplay.next()
     await additional_photo(message, state)
 
 
@@ -83,6 +95,7 @@ async def advanced_stage(message: types.Message):
 def register_advanced_handlers(dp: Dispatcher):
     dp.register_message_handler(personal_account, state=botStages.Screenplay.advanced, text=['Личный кабинет'])
     dp.register_message_handler(additional_play, state=botStages.Screenplay.advanced, text=['Дополнительный купон'])
+    dp.register_message_handler(additional_product, state=botStages.Screenplay.advanced_product)
     dp.register_message_handler(dont_added_photo, state=botStages.Screenplay.advanced_photo)
     dp.register_message_handler(additional_photo, state=botStages.Screenplay.advanced_photo, content_types=['photo'])
     dp.register_message_handler(additional_lucky_ticket, state=botStages.Screenplay.advanced_lucky_ticket)
