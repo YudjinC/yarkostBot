@@ -28,7 +28,6 @@ async def additional_play(message: types.Message,  state: FSMContext):
         reply_markup=kb.productKeyboard
     )
     await botStages.Screenplay.advanced_product.set()
-    await additional_product(message, state)
 
 
 async def additional_product(message: types.Message,  state: FSMContext):
