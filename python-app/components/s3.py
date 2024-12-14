@@ -18,8 +18,10 @@ minio_client = Minio(
     secure=False
 )
 
-if not minio_client.bucket_exists(MINIO_BUCKET_NAME):
-    minio_client.make_bucket(MINIO_BUCKET_NAME)
+
+async def minio_start():
+    if not minio_client.bucket_exists(MINIO_BUCKET_NAME):
+        await minio_client.make_bucket(MINIO_BUCKET_NAME)
 
 
 async def save_photo_to_minio(bot, file_id: str, filename: str) -> str:

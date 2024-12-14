@@ -5,6 +5,7 @@ from aiogram.types import InputFile
 
 from components import database as db
 from components import keyboards as kb
+from components import s3
 from modules import botStages
 from handlers.advanced import advanced_stage
 
@@ -102,11 +103,24 @@ async def dont_added_photo(message: types.Message):
     )
 
 
-async def add_photo(message: types.Message, state: FSMContext):
+async def add_photo(message: types.Message, state: FSMContext, bot):
     async with state.proxy() as data:
-        data['photo'] = message.photo[0].file_id
+        file_id = message.photo[-1].file_id
+        filename = f"user_{message.from_user.id}_{file_id}_photo.jpg"
+
+        photo_url = await s3.save_photo_to_minio(bot, file_id, filename)
+
+        data['photo'] = photo_url
+
     await botStages.Screenplay.next()
     await add_lucky_ticket(message, state)
+
+
+# async def add_photo(message: types.Message, state: FSMContext):
+#     async with state.proxy() as data:
+#         data['photo'] = message.photo[0].file_id
+#     await botStages.Screenplay.next()
+#     await add_lucky_ticket(message, state)
 
 
 async def add_lucky_ticket(message: types.Message, state: FSMContext):
