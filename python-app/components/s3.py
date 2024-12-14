@@ -41,11 +41,13 @@ async def save_photo_to_minio(bot, file_id: str, filename: str) -> str:
     await bot.download_file(file_path=file.file_path, destination=photo_path)
 
     try:
-        minio_client.fput_object(
-            bucket_name=MINIO_BUCKET_NAME,
-            object_name=filename,
-            file_path=photo_path,
-            content_type="image/jpeg"
+        await loop.run_in_executor(
+            None,
+            minio_client.fput_object,
+            MINIO_BUCKET_NAME,
+            filename,
+            photo_path,
+            "image/jpeg"
         )
     finally:
         if os.path.exists(photo_path):
