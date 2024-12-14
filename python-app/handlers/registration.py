@@ -108,19 +108,12 @@ async def add_photo(message: types.Message, state: FSMContext, bot):
         file_id = message.photo[-1].file_id
         filename = f"user_{message.from_user.id}_{file_id}_photo.jpg"
 
-        photo_url = await s3.save_photo_to_minio(bot, file_id, filename)
+        photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
 
         data['photo'] = photo_url
 
     await botStages.Screenplay.next()
     await add_lucky_ticket(message, state)
-
-
-# async def add_photo(message: types.Message, state: FSMContext):
-#     async with state.proxy() as data:
-#         data['photo'] = message.photo[0].file_id
-#     await botStages.Screenplay.next()
-#     await add_lucky_ticket(message, state)
 
 
 async def add_lucky_ticket(message: types.Message, state: FSMContext):
