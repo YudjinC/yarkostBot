@@ -76,8 +76,8 @@ async def additional_item(pool, state, user_id):
                 """
                 UPDATE users
                 SET product = COALESCE(product, ARRAY[]::TEXT[]) || $1,
-                    photo = $2,
-                    lucky_ticket = $3
+                    photo = COALESCE(photo, ARRAY[]::TEXT[]) || $2,
+                    lucky_ticket = COALESCE(lucky_ticket, ARRAY[]::TEXT[]) || $3
                 WHERE tg_id = $4
                 """,
                 [data['product']],
