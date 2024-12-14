@@ -105,8 +105,9 @@ async def dont_added_photo(message: types.Message):
 
 async def add_photo(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        file_id = message.photo[-1].file_id
-        filename = f"user_{message.from_user.id}_{file_id}_photo.jpg"
+        file_id = message.photo[0].file_id
+        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+        filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
 
         photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
 
