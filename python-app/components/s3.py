@@ -1,5 +1,6 @@
 from minio import Minio
 from minio.error import S3Error
+import asyncio
 
 from dotenv import load_dotenv
 import os
@@ -18,10 +19,19 @@ minio_client = Minio(
     secure=False
 )
 
+loop = asyncio.get_event_loop()
+
 
 async def minio_start():
-    if not minio_client.bucket_exists(MINIO_BUCKET_NAME):
-        await minio_client.make_bucket(MINIO_BUCKET_NAME)
+    try:
+        bucket_exists = await loop.run_in_executor(None, minio_client.bucket_exists, MINIO_BUCKET_NAME)
+        if not bucket_exists:
+            await loop.run_in_executor(None, minio_client.make_bucket, MINIO_BUCKET_NAME)
+            print(f'[MINIO_INFO] Bucket "{MINIO_BUCKET_NAME}" crate.')
+        else:
+            print(f'[MINIO_INFO] Bucket "{MINIO_BUCKET_NAME}" exist.')
+    except S3Error as e:
+        print(f'[MINIO_ERROR] MinIO: {e}')
 
 
 async def save_photo_to_minio(bot, file_id: str, filename: str) -> str:
