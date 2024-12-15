@@ -138,7 +138,7 @@ async def add_promo(pool, promo_code: str, start_date: date, end_date: date):
     async with pool.acquire() as conn:
         await conn.execute(
             """
-            INSERT INTO promo_codes (promo, start_date, end_date)
+            INSERT INTO promo_codes (code, start_date, end_date)
             VALUES ($1, $2, $3)
             """,
             promo_code,
