@@ -3,6 +3,7 @@ from aiogram.types import InputFile
 
 from components import database as db
 from components import keyboards as kb
+from components import s3
 from components import utils
 from modules import botStages
 from handlers.advanced import advanced_stage

@@ -5,6 +5,7 @@ from aiogram.types import ReplyKeyboardRemove
 
 from components import database as db
 from components import keyboards as kb
+from components import s3
 from modules import botStages
 
 import random
@@ -53,7 +54,13 @@ async def dont_added_photo(message: types.Message):
 
 async def additional_photo(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data['photo'] = message.photo[0].file_id
+        file_id = message.photo[-1].file_id
+        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+        filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
+
+        photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
+
+        data['photo'] = photo_url
     await botStages.Screenplay.next()
     await additional_lucky_ticket(message, state)
 

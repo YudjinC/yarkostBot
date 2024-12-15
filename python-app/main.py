@@ -3,6 +3,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from dotenv import load_dotenv
 
 from components import database as db
+from components import s3
 from handlers import register_handlers
 
 import logging
@@ -21,6 +22,7 @@ async def on_startup(_):
     pool = await db.create_db_pool()
     bot['pg_pool'] = pool
     await db.db_start(pool)
+    await s3.minio_start()
     print('Бот стартовал')
     register_handlers(dp)
 
