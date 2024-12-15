@@ -34,6 +34,16 @@ async def db_start(pool):
             )
             """
         )
+        await conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS promo_codes(
+                id SERIAL PRIMARY KEY,
+                code VARCHAR(50) NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE NOT NULL
+            )
+            """
+        )
 
 
 async def cmd_start_db(pool, user_id):
