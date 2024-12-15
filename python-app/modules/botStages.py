@@ -1,7 +1,7 @@
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 
-class UserScreenplay(StatesGroup):
+class UserRegistrationScreenplay(StatesGroup):
     fio = State()
     contact = State()
     email = State()
@@ -11,6 +11,9 @@ class UserScreenplay(StatesGroup):
     # photo1 = State()
     # photo2 = State()
     lucky_ticket = State()
+
+
+class UserAdvancedScreenplay(StatesGroup):
     advanced = State()
     advanced_product = State()
     advanced_photo = State()

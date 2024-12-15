@@ -24,7 +24,7 @@ async def cmd_start(message: types.Message):
         await db.cmd_start_db(pool, message.from_user.id)
         advanced = await db.check_advanced_state(pool, message.from_user.id)
         if advanced:
-            await botStages.UserScreenplay.advanced.set()
+            await botStages.UserAdvancedScreenplay.advanced.set()
             await advanced_stage(message)
         else:
             await message.bot.send_photo(
