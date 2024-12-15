@@ -97,13 +97,19 @@ async def add_product(message: types.Message, state: FSMContext):
     await botStages.UserRegistrationScreenplay.next()
 
 
-async def dont_added_photo(message: types.Message):
+async def dont_added_photo1(message: types.Message):
     await message.answer(
-        f'Вы не отправили фотографии...😑'
+        f'Вы не отправили фотографию...😑'
     )
 
 
-async def add_photo(message: types.Message, state: FSMContext):
+async def dont_added_photo2(message: types.Message):
+    await message.answer(
+        f'Вы не отправили фотографию...😑'
+    )
+
+
+async def add_photo1(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         file_id = message.photo[-1].file_id
         random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
@@ -111,7 +117,22 @@ async def add_photo(message: types.Message, state: FSMContext):
 
         photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
 
-        data['photo'] = photo_url
+        if 'photo' not in data:
+            data['photo'] = []
+        data['photo'].append(photo_url)
+
+    await botStages.UserRegistrationScreenplay.next()
+
+
+async def add_photo2(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        file_id = message.photo[-1].file_id
+        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+        filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
+
+        photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
+
+        data['photo'].append(photo_url)
 
     await botStages.UserRegistrationScreenplay.next()
     await add_lucky_ticket(message, state)
@@ -142,6 +163,8 @@ def register_registration_handlers(dp: Dispatcher):
     dp.register_message_handler(add_email, state=botStages.UserRegistrationScreenplay.email)
     dp.register_message_handler(add_birthday, state=botStages.UserRegistrationScreenplay.birthday)
     dp.register_message_handler(add_product, state=botStages.UserRegistrationScreenplay.product)
-    dp.register_message_handler(dont_added_photo, lambda message: not message.photo, state=botStages.UserRegistrationScreenplay.photo)
-    dp.register_message_handler(add_photo, state=botStages.UserRegistrationScreenplay.photo, content_types=['photo'])
+    dp.register_message_handler(dont_added_photo1, lambda message: not message.photo, state=botStages.UserRegistrationScreenplay.photo1)
+    dp.register_message_handler(dont_added_photo2, lambda message: not message.photo, state=botStages.UserRegistrationScreenplay.photo2)
+    dp.register_message_handler(add_photo1, state=botStages.UserRegistrationScreenplay.photo1, content_types=['photo'])
+    dp.register_message_handler(add_photo2, state=botStages.UserRegistrationScreenplay.photo2, content_types=['photo'])
     dp.register_message_handler(add_lucky_ticket, state=botStages.UserRegistrationScreenplay.lucky_ticket)
