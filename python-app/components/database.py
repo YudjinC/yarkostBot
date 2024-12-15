@@ -156,3 +156,31 @@ async def select_promo(pool):
             """
         )
     return result
+
+
+async def select_one_promo(pool, promo_code):
+    async with pool.acquire() as conn:
+        result = await conn.fetchone(
+            """
+            SELECT code, start_date, end_date 
+            FROM promo_codes
+            WHERE code = $1
+            """,
+            promo_code
+        )
+    return result
+
+
+async def update_promo(pool, promo_code: str, start_date: date, end_date: date):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            UPDATE promo_codes
+            SET start_date = $1,
+                end_date = $2,
+            WHERE code = $3
+            """,
+            start_date,
+            end_date,
+            promo_code
+        )

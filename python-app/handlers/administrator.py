@@ -127,6 +127,61 @@ async def promo_change(message: types.Message):
     )
 
 
+async def promo_change_process(message: types.Message):
+    pool = await message.bot.get('pg_pool')
+    promo_pattern = (
+        r"promo:\s*(?P<promo>[^\s]+)\n"
+        r"start:\s*(?P<start>\d{4}-\d{2}-\d{2})\n"
+        r"end:\s*(?P<end>\d{4}-\d{2}-\d{2})"
+    )
+    match = re.fullmatch(promo_pattern, message.text.strip())
+    if not match:
+        await message.answer(
+            f'Неверный формат данных. Убедитесь, что всё соответствует инструкции:\n'
+            f'promo: (указать код БЕЗ пробелов!)\n'
+            f'start: (дата начала в формате YYYY-MM-DD)\n'
+            f'end: (дата окончания в формате YYYY-MM-DD)'
+        )
+        return
+    promo_data = match.groupdict()
+    promo_code = promo_data["promo"]
+    start_date = promo_data["start"]
+    end_date = promo_data["end"]
+    try:
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+        if start_date >= end_date:
+            await message.answer(
+                f'Дата начала действия промокода должна быть раньше даты окончания.'
+            )
+            return
+    except ValueError:
+        await message.answer(
+            f'Неверный формат дат. Используйте формат YYYY-MM-DD.'
+        )
+        return
+    try:
+        exist = await db.select_one_promo(pool, promo_code)
+        if not exist:
+            await message.answer(
+                f'Промокод с названием "{promo_code}" не найден! Убедитесь, что вы указали верный код.'
+            )
+            return
+        await db.update_promo(pool, promo_code, start_date, end_date)
+        await message.answer(
+            f'Промокод успешно обновлён:\n'
+            f'Код: {promo_code}\n'
+            f'Дата начала: {start_date}\n'
+            f'Дата окончания: {end_date}',
+            reply_markup=kb.promoKeyboardAdmin
+        )
+        await botStages.AdminScreenPlay.admin_promo.set()
+    except Exception as e:
+        await message.answer(
+            f'Произошла ошибка при обновлении промокода: {e}'
+        )
+
+
 async def promo_change_process_cancel(message: types.Message):
     await botStages.AdminScreenPlay.admin_promo.set()
     await message.answer(
