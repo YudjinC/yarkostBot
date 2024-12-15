@@ -177,7 +177,7 @@ async def update_promo(pool, promo_code: str, start_date: date, end_date: date):
             """
             UPDATE promo_codes
             SET start_date = $1,
-                end_date = $2,
+                end_date = $2
             WHERE code = $3
             """,
             start_date,
