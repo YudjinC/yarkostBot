@@ -41,6 +41,6 @@ async def admin_play(message: types.Message):
 
 
 def register_administrator_handlers(dp: Dispatcher):
-    dp.register_message_handler(admin_play, state=botStages.AdminScreenPlay.admin_start)
     dp.register_message_handler(promo_codes, state=botStages.AdminScreenPlay.admin_start, text=['Промокоды'])
     dp.register_message_handler(promo_cancel, state=botStages.AdminScreenPlay.admin_promo, text=['Отмена'])
+    dp.register_message_handler(admin_play, state=botStages.AdminScreenPlay.admin_start)
