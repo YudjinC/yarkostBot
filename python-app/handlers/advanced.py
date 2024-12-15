@@ -28,7 +28,7 @@ async def additional_play(message: types.Message):
         f'Выберите купленный товар и нажмите на кнопку!',
         reply_markup=kb.productKeyboard
     )
-    await botStages.UserScreenplay.advanced_product.set()
+    await botStages.UserAdvancedScreenplay.advanced_product.set()
 
 
 async def additional_product(message: types.Message,  state: FSMContext):
@@ -42,7 +42,7 @@ async def additional_product(message: types.Message,  state: FSMContext):
                 f'чек об оплате с маркетплейса и отзыв с артикулом товара, воспользовавшись скрепкой около клавиатуры.',
         reply_markup=ReplyKeyboardRemove()
     )
-    await botStages.UserScreenplay.next()
+    await botStages.UserAdvancedScreenplay.next()
     await additional_photo(message, state)
 
 
@@ -61,7 +61,7 @@ async def additional_photo(message: types.Message, state: FSMContext):
         photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
 
         data['photo'] = photo_url
-    await botStages.UserScreenplay.next()
+    await botStages.UserAdvancedScreenplay.next()
     await additional_lucky_ticket(message, state)
 
 
@@ -78,12 +78,12 @@ async def additional_lucky_ticket(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['lucky_ticket'] = random_string
     await db.additional_item(pool, state, message.from_user.id)
-    await botStages.UserScreenplay.advanced.set()
+    await botStages.UserAdvancedScreenplay.advanced.set()
     await advanced_stage(message)
 
 
 async def advanced_stage(message: types.Message):
-    await botStages.UserScreenplay.advanced.set()
+    await botStages.UserAdvancedScreenplay.advanced.set()
     await message.bot.send_photo(
         message.chat.id,
         photo=InputFile('photos/marketplaces.jpg'),
@@ -100,10 +100,10 @@ async def advanced_stage(message: types.Message):
 
 
 def register_advanced_handlers(dp: Dispatcher):
-    dp.register_message_handler(personal_account, state=botStages.UserScreenplay.advanced, text=['Личный кабинет'])
-    dp.register_message_handler(additional_play, state=botStages.UserScreenplay.advanced, text=['Дополнительный купон'])
-    dp.register_message_handler(additional_product, state=botStages.UserScreenplay.advanced_product)
-    dp.register_message_handler(dont_added_photo, state=botStages.UserScreenplay.advanced_photo)
-    dp.register_message_handler(additional_photo, state=botStages.UserScreenplay.advanced_photo, content_types=['photo'])
-    dp.register_message_handler(additional_lucky_ticket, state=botStages.UserScreenplay.advanced_lucky_ticket)
-    dp.register_message_handler(advanced_stage, state=botStages.UserScreenplay.advanced)
+    dp.register_message_handler(personal_account, state=botStages.UserAdvancedScreenplay.advanced, text=['Личный кабинет'])
+    dp.register_message_handler(additional_play, state=botStages.UserAdvancedScreenplay.advanced, text=['Дополнительный купон'])
+    dp.register_message_handler(additional_product, state=botStages.UserAdvancedScreenplay.advanced_product)
+    dp.register_message_handler(dont_added_photo, state=botStages.UserAdvancedScreenplay.advanced_photo)
+    dp.register_message_handler(additional_photo, state=botStages.UserAdvancedScreenplay.advanced_photo, content_types=['photo'])
+    dp.register_message_handler(additional_lucky_ticket, state=botStages.UserAdvancedScreenplay.advanced_lucky_ticket)
+    dp.register_message_handler(advanced_stage, state=botStages.UserAdvancedScreenplay.advanced)
