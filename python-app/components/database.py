@@ -1,5 +1,6 @@
 import asyncpg
 
+from datetime import date
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -31,6 +32,16 @@ async def db_start(pool):
                 product TEXT[],
                 photo TEXT[],
                 lucky_ticket TEXT[]
+            )
+            """
+        )
+        await conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS promo_codes(
+                id SERIAL PRIMARY KEY,
+                code VARCHAR(50) NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE NOT NULL
             )
             """
         )
@@ -121,3 +132,55 @@ async def personal_account(pool, user_id):
             "fio": result['fio'],
             "tickets": tickets_text
         }
+
+
+async def add_promo(pool, promo_code: str, start_date: date, end_date: date):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO promo_codes (code, start_date, end_date)
+            VALUES ($1, $2, $3)
+            """,
+            promo_code,
+            start_date,
+            end_date
+        )
+
+
+async def select_promo(pool):
+    async with pool.acquire() as conn:
+        result = await conn.fetch(
+            """
+            SELECT code, start_date, end_date 
+            FROM promo_codes
+            """
+        )
+    return result
+
+
+async def select_one_promo(pool, promo_code):
+    async with pool.acquire() as conn:
+        result = await conn.fetchrow(
+            """
+            SELECT code, start_date, end_date 
+            FROM promo_codes
+            WHERE code = $1
+            """,
+            promo_code
+        )
+    return result
+
+
+async def update_promo(pool, promo_code: str, start_date: date, end_date: date):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            UPDATE promo_codes
+            SET start_date = $1,
+                end_date = $2
+            WHERE code = $3
+            """,
+            start_date,
+            end_date,
+            promo_code
+        )
