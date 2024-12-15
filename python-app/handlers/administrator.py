@@ -26,7 +26,7 @@ async def promo_codes(message: types.Message):
 
 
 async def promo_add(message: types.Message):
-    await botStages.AdminScreenPlay.next()
+    await botStages.AdminScreenPlay.admin_promo_add.set()
     await message.answer(
         f'При добавлении промокода используейте следующий формат:\n'
         f'promo: (указать код)\n'
@@ -59,16 +59,9 @@ async def admin_play(message: types.Message):
     )
 
 
-async def what(message: types.Message):
-    await message.reply(
-        f'what??'
-    )
-
-
 def register_administrator_handlers(dp: Dispatcher):
     dp.register_message_handler(promo_codes, state=botStages.AdminScreenPlay.admin_start, text=['Промокоды'])
-    dp.register_message_handler(promo_add, state=botStages.AdminScreenPlay.admin_start, text=['Добавить промокод'])
+    dp.register_message_handler(promo_add, state=botStages.AdminScreenPlay.admin_promo, text=['Добавить промокод'])
     dp.register_message_handler(promo_add_cancel, state=botStages.AdminScreenPlay.admin_promo_add, text=['Назад'])
     dp.register_message_handler(promo_cancel, state=botStages.AdminScreenPlay.admin_promo, text=['Назад'])
     dp.register_message_handler(admin_play, state=botStages.AdminScreenPlay.admin_start)
-    dp.register_message_handler(what)
