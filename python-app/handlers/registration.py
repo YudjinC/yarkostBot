@@ -18,7 +18,7 @@ EMAIL_REGEX = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
 
 async def play(callback_query: types.CallbackQuery):
     if callback_query.data == 'play':
-        await botStages.Screenplay.fio.set()
+        await botStages.UserScreenplay.fio.set()
         await callback_query.bot.send_message(
             chat_id=callback_query.from_user.id,
             text=f'Как я могу к вам обращаться?\n\n'
@@ -34,7 +34,7 @@ async def add_nickname(message: types.Message, state: FSMContext):
         f'Нажмите на кнопку под клавиатурой',
         reply_markup=kb.shareContactKeyboard
     )
-    await botStages.Screenplay.next()
+    await botStages.UserScreenplay.next()
 
 
 async def add_contact(message: types.Message, state: FSMContext):
@@ -45,7 +45,7 @@ async def add_contact(message: types.Message, state: FSMContext):
         f'Если не дозвонимся, на какой адрес email писать поздравления с победой в розыгрыше?',
         reply_markup=ReplyKeyboardRemove()
     )
-    await botStages.Screenplay.next()
+    await botStages.UserScreenplay.next()
 
 
 async def contact_not_shared(message: types.Message):
@@ -64,7 +64,7 @@ async def add_email(message: types.Message, state: FSMContext):
             f'Когда ваш день рождения? Хотим тепло вас поздравить и отправить подарок!💖',
             reply_markup=ReplyKeyboardRemove()
         )
-        await botStages.Screenplay.next()
+        await botStages.UserScreenplay.next()
     else:
         await message.answer(
             f'Это не похоже на email🤔\n'
@@ -80,7 +80,7 @@ async def add_birthday(message: types.Message, state: FSMContext):
         f'Теперь выберите купленный товар и нажмите на кнопку!',
         reply_markup=kb.productKeyboard
     )
-    await botStages.Screenplay.next()
+    await botStages.UserScreenplay.next()
 
 
 async def add_product(message: types.Message, state: FSMContext):
@@ -94,7 +94,7 @@ async def add_product(message: types.Message, state: FSMContext):
                 f'чек об оплате с маркетплейса и отзыв с артикулом товара, воспользовавшись скрепкой около клавиатуры.',
         reply_markup=ReplyKeyboardRemove()
     )
-    await botStages.Screenplay.next()
+    await botStages.UserScreenplay.next()
 
 
 async def dont_added_photo(message: types.Message):
@@ -113,7 +113,7 @@ async def add_photo(message: types.Message, state: FSMContext):
 
         data['photo'] = photo_url
 
-    await botStages.Screenplay.next()
+    await botStages.UserScreenplay.next()
     await add_lucky_ticket(message, state)
 
 
@@ -130,18 +130,18 @@ async def add_lucky_ticket(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['lucky_ticket'] = random_string
     await db.add_item(pool, state, message.from_user.id)
-    await botStages.Screenplay.next()
+    await botStages.UserScreenplay.next()
     await advanced_stage(message)
 
 
 def register_registration_handlers(dp: Dispatcher):
     dp.register_callback_query_handler(play, lambda c: c.data == 'play')
-    dp.register_message_handler(add_nickname, state=botStages.Screenplay.fio)
-    dp.register_message_handler(add_contact, state=botStages.Screenplay.contact, content_types=types.ContentType.CONTACT)
-    dp.register_message_handler(contact_not_shared, state=botStages.Screenplay.contact)
-    dp.register_message_handler(add_email, state=botStages.Screenplay.email)
-    dp.register_message_handler(add_birthday, state=botStages.Screenplay.birthday)
-    dp.register_message_handler(add_product, state=botStages.Screenplay.product)
-    dp.register_message_handler(dont_added_photo, lambda message: not message.photo, state=botStages.Screenplay.photo)
-    dp.register_message_handler(add_photo, state=botStages.Screenplay.photo, content_types=['photo'])
-    dp.register_message_handler(add_lucky_ticket, state=botStages.Screenplay.lucky_ticket)
+    dp.register_message_handler(add_nickname, state=botStages.UserScreenplay.fio)
+    dp.register_message_handler(add_contact, state=botStages.UserScreenplay.contact, content_types=types.ContentType.CONTACT)
+    dp.register_message_handler(contact_not_shared, state=botStages.UserScreenplay.contact)
+    dp.register_message_handler(add_email, state=botStages.UserScreenplay.email)
+    dp.register_message_handler(add_birthday, state=botStages.UserScreenplay.birthday)
+    dp.register_message_handler(add_product, state=botStages.UserScreenplay.product)
+    dp.register_message_handler(dont_added_photo, lambda message: not message.photo, state=botStages.UserScreenplay.photo)
+    dp.register_message_handler(add_photo, state=botStages.UserScreenplay.photo, content_types=['photo'])
+    dp.register_message_handler(add_lucky_ticket, state=botStages.UserScreenplay.lucky_ticket)
