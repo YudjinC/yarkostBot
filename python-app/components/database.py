@@ -1,5 +1,6 @@
 import asyncpg
 
+from datetime import date
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -131,3 +132,16 @@ async def personal_account(pool, user_id):
             "fio": result['fio'],
             "tickets": tickets_text
         }
+
+
+async def add_promo(pool, promo_code: str, start_date: date, end_date: date):
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO promo_codes (promo, start_date, end_date)
+            VALUES ($1, $2, $3)
+            """,
+            promo_code,
+            start_date,
+            end_date
+        )
