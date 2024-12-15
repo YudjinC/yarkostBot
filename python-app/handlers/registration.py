@@ -94,6 +94,7 @@ async def add_product(message: types.Message, state: FSMContext):
                 f'чек об оплате с маркетплейса и отзыв с артикулом товара, воспользовавшись скрепкой около клавиатуры.',
         reply_markup=ReplyKeyboardRemove()
     )
+    await message.answer(f'test3 {state.get_state()}')
     await botStages.UserRegistrationScreenplay.next()
 
 
@@ -116,7 +117,7 @@ async def add_photo1(message: types.Message, state: FSMContext):
         filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
 
         photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
-
+        await message.answer(f'test4 {state.get_state()}')
         if 'photo' not in data:
             data['photo'] = []
         data['photo'].append(photo_url)
