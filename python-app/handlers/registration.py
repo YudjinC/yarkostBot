@@ -129,15 +129,15 @@ async def add_photo2(message: types.Message, state: FSMContext):
         file_id = message.photo[-1].file_id
         random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
         filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
-
+        await message.answer(f'test {state.get_state()}')
         photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
 
         data['photo'].append(photo_url)
 
-    message.answer(f'{state.get_state()}')
+    await message.answer(f'test2 {state.get_state()}')
 
-    await botStages.UserRegistrationScreenplay.next()
     await add_lucky_ticket(message, state)
+    await botStages.UserRegistrationScreenplay.next()
 
 
 async def add_lucky_ticket(message: types.Message, state: FSMContext):
