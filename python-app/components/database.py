@@ -74,7 +74,7 @@ async def add_item(pool, state, user_id):
                 data['email'],
                 data['birthday'],
                 [data['product']],
-                [data['photo']],
+                data['photo'],
                 [data['lucky_ticket']],
                 user_id
             )

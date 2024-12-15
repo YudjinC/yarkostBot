@@ -125,22 +125,19 @@ async def add_photo1(message: types.Message, state: FSMContext):
 
 
 async def add_photo2(message: types.Message, state: FSMContext):
-    try:
-        async with state.proxy() as data:
-            file_id = message.photo[-1].file_id
-            random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-            filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
+    async with state.proxy() as data:
+        file_id = message.photo[-1].file_id
+        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+        filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
 
-            photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
+        photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
 
-            data['photo'].append(photo_url)
+        data['photo'].append(photo_url)
 
-        await botStages.UserRegistrationScreenplay.next()
-        await add_lucky_ticket(message, state)
-    except Exception as e:
-        await message.answer(
-            f'Произошла ошибка при добавлении фото: {e}'
-        )
+    message.answer(f'{state.get_state()}')
+
+    await botStages.UserRegistrationScreenplay.next()
+    await add_lucky_ticket(message, state)
 
 
 async def add_lucky_ticket(message: types.Message, state: FSMContext):
@@ -156,7 +153,7 @@ async def add_lucky_ticket(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['lucky_ticket'] = random_string
     await db.add_item(pool, state, message.from_user.id)
-    await botStages.UserRegistrationScreenplay.next()
+    await botStages.UserAdvancedScreenplay.advanced.set()
     await advanced_stage(message)
 
 
