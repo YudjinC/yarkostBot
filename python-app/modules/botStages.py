@@ -7,8 +7,7 @@ class UserRegistrationScreenplay(StatesGroup):
     email = State()
     birthday = State()
     product = State()
-    photo1 = State()
-    photo2 = State()
+    photo_upload = State()
     lucky_ticket = State()
 
 
