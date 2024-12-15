@@ -111,6 +111,7 @@ async def dont_added_photo2(message: types.Message):
 
 
 async def add_photo1(message: types.Message, state: FSMContext):
+    await botStages.UserRegistrationScreenplay.next()
     async with state.proxy() as data:
         file_id = message.photo[-1].file_id
         random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
@@ -121,8 +122,6 @@ async def add_photo1(message: types.Message, state: FSMContext):
         if 'photo' not in data:
             data['photo'] = []
         data['photo'].append(photo_url)
-
-    await botStages.UserRegistrationScreenplay.next()
 
 
 async def add_photo2(message: types.Message, state: FSMContext):
