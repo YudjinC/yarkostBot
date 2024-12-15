@@ -160,7 +160,7 @@ async def select_promo(pool):
 
 async def select_one_promo(pool, promo_code):
     async with pool.acquire() as conn:
-        result = await conn.fetchone(
+        result = await conn.fetchrow(
             """
             SELECT code, start_date, end_date 
             FROM promo_codes
