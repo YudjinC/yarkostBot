@@ -14,9 +14,10 @@ import os
 load_dotenv()
 admin = int(os.getenv('ADMIN_ID'))
 
+
 async def cmd_start(message: types.Message):
     if message.from_user.id == admin:
-        await botStages.AminScreenPlay.admin_start.set()
+        await botStages.AdminScreenPlay.admin_start.set()
         await admin_play(message)
     else:
         pool = await message.bot.get('pg_pool')

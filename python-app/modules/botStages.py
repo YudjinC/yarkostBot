@@ -15,5 +15,6 @@ class UserScreenplay(StatesGroup):
     advanced_lucky_ticket = State()
 
 
-class AminScreenPlay(StatesGroup):
+class AdminScreenPlay(StatesGroup):
     admin_start = State()
+    admin_promo = State()

@@ -23,7 +23,7 @@ async def personal_account(message: types.Message):
     )
 
 
-async def additional_play(message: types.Message,  state: FSMContext):
+async def additional_play(message: types.Message):
     await message.answer(
         f'Выберите купленный товар и нажмите на кнопку!',
         reply_markup=kb.productKeyboard

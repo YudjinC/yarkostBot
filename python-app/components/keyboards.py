@@ -30,3 +30,7 @@ lkKeyboard.add('Личный кабинет').add('Дополнительный 
 # admin keyboard
 mainKeyboardAdmin = ReplyKeyboardMarkup(resize_keyboard=True)
 mainKeyboardAdmin.add('Выгрузить базу данных пользователей').add('Выгрузить по промокоду').add('Промокоды')
+
+# admin promo keyboard
+promoKeyboardAdmin = ReplyKeyboardMarkup(resize_keyboard=True)
+promoKeyboardAdmin.add('Вывести список промокодов').add('Изменить промокод').add('Добавить промокод').add('Отмена')
