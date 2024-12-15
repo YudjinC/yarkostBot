@@ -4,10 +4,13 @@ from aiogram.types import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeybo
 playerInline = InlineKeyboardMarkup(row_width=1)
 playerInline.add(InlineKeyboardButton(text='УЧАСТВУЮ', callback_data='play'))
 
+# cancel button
+cancelInline = InlineKeyboardMarkup('Назад')
+
 # share contact keyboard
 shareContactKeyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-contactButton = InlineKeyboardButton("Поделиться контактом", request_contact=True)
-shareContactKeyboard.add(contactButton)
+contactButtonInline = InlineKeyboardButton('Поделиться контактом', request_contact=True)
+shareContactKeyboard.add(contactButtonInline)
 
 # select product keyboard
 productKeyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
@@ -33,4 +36,8 @@ mainKeyboardAdmin.add('Выгрузить базу данных пользова
 
 # admin promo keyboard
 promoKeyboardAdmin = ReplyKeyboardMarkup(resize_keyboard=True)
-promoKeyboardAdmin.add('Вывести список промокодов').add('Изменить промокод').add('Добавить промокод').add('Отмена')
+promoKeyboardAdmin.add('Вывести список промокодов').add('Добавить промокод').add('Изменить промокод').add(cancelInline)
+
+# cancel keyboard
+cancelKeyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+cancelKeyboard.add(cancelInline)

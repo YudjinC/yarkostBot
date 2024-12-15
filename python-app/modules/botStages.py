@@ -18,3 +18,4 @@ class UserScreenplay(StatesGroup):
 class AdminScreenPlay(StatesGroup):
     admin_start = State()
     admin_promo = State()
+    admin_promo_add = State()
