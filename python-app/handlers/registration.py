@@ -136,9 +136,8 @@ async def add_photo2(message: types.Message, state: FSMContext):
 
     await message.answer(f'test2 {state.get_state()}')
 
-    await add_lucky_ticket(message, state)
     await botStages.UserRegistrationScreenplay.next()
-
+    await add_lucky_ticket(message, state)
 
 async def add_lucky_ticket(message: types.Message, state: FSMContext):
     pool = await message.bot.get('pg_pool')
