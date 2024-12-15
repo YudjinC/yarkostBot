@@ -5,7 +5,7 @@ playerInline = InlineKeyboardMarkup(row_width=1)
 playerInline.add(InlineKeyboardButton(text='УЧАСТВУЮ', callback_data='play'))
 
 # cancel button
-cancelInline = InlineKeyboardMarkup('Назад')
+cancelInline = InlineKeyboardMarkup(text='Назад')
 
 # share contact keyboard
 shareContactKeyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
