@@ -27,13 +27,32 @@ async def promo_codes(message: types.Message):
     )
 
 
+async def promo_select(message: types.Message):
+    pool = await message.bot.get('pg_pool')
+    try:
+        promo_codes = await db.select_promo(pool)
+        if not promo_codes:
+            await message.answer(
+                f'Нет активных промокодов.'
+            )
+        else:
+            promo_list = 'Ваши промокоды:\n'
+            for record in promo_codes:
+                promo_list += f"{record['code']}: {record['start_date']}, {record['end_date']}\n"
+            await message.answer(promo_list)
+    except Exception as e:
+        await message.answer(
+            f'Произошла ошибка при получении списка промокодов: {e}'
+        )
+
+
 async def promo_add(message: types.Message):
     await botStages.AdminScreenPlay.admin_promo_add.set()
     await message.answer(
         f'При добавлении промокода используейте следующий формат:\n'
         f'promo: (указать код БЕЗ пробелов!)\n'
-        f'start: (укажите дату начала действия промокода  в формте YYYY-MM-DD)\n'
-        f'end: (укажите дату окончания действия промокода в формате YYYY-MM-DD)',
+        f'start: (дата начала в формате YYYY-MM-DD)\n'
+        f'end: (дата окончания в формате YYYY-MM-DD)',
         reply_markup=kb.cancelKeyboard
     )
 
@@ -49,7 +68,7 @@ async def process_promo(message: types.Message, state: FSMContext):
     if not match:
         await message.answer(
             f'Неверный формат данных. Убедитесь, что всё соответствует инструкции:\n'
-            f'promo: (код)\n'
+            f'promo: (указать код БЕЗ пробелов!)\n'
             f'start: (дата начала в формате YYYY-MM-DD)\n'
             f'end: (дата окончания в формате YYYY-MM-DD)'
         )
@@ -112,6 +131,7 @@ async def admin_play(message: types.Message):
 
 def register_administrator_handlers(dp: Dispatcher):
     dp.register_message_handler(promo_codes, state=botStages.AdminScreenPlay.admin_start, text=['Промокоды'])
+    dp.register_message_handler(promo_select, state=botStages.AdminScreenPlay.admin_promo, text=['Вывести список промокодов'])
     dp.register_message_handler(promo_add, state=botStages.AdminScreenPlay.admin_promo, text=['Добавить промокод'])
     dp.register_message_handler(promo_add_cancel, state=botStages.AdminScreenPlay.admin_promo_add, text=['Назад'])
     dp.register_message_handler(process_promo, state=botStages.AdminScreenPlay.admin_promo_add)
