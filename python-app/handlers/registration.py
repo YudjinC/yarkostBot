@@ -124,27 +124,21 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
     """
     Добавляет фото в очередь, проверяет лимит и выполняет финализацию.
     """
-    async with state.proxy() as data:
-        # Инициализируем очередь и сохранённые ссылки
-        if 'photos' not in data:
-            data['photos'] = []
+    # Проверяем лимит
+    if len(shared_data['photos']) >= MAX_PHOTOS:
+        logging.warning(f"Лимит фото достигнут. Игнорируем фото: {file_id}")
+        return
 
-        # Проверяем лимит
-        if len(shared_data['photos']) >= MAX_PHOTOS:
-            logging.warning(f"Лимит фото достигнут. Игнорируем фото: {file_id}")
-            return
+    # Добавляем фото и сохраняем
+    logging.info(f"Добавляем фото: {file_id}")
+    photo_url = await save_photo_to_storage(file_id, message)
+    shared_data['photos'].append(photo_url)
 
-        # Добавляем фото и сохраняем
-        logging.info(f"Добавляем фото: {file_id}")
-        photo_url = await save_photo_to_storage(file_id, message)
-        shared_data['photos'].append(photo_url)
-
-        if len(shared_data['photos']) == 1:
-            await message.answer("✅ Поздравляю, ваш **чек** сохранён!")
-        elif len(shared_data['photos']) == MAX_PHOTOS:
-            await message.answer("✅ Поздравляю, ваш **отзыв** сохранён!")
-            data['photos'] = shared_data['photos']
-            await finalize_photos(message, state, data)
+    if len(shared_data['photos']) == 1:
+        await message.answer("✅ Поздравляю, ваш **чек** сохранён!")
+    elif len(shared_data['photos']) == MAX_PHOTOS:
+        await message.answer("✅ Поздравляю, ваш **отзыв** сохранён!")
+        await finalize_photos(message, state)
 
 
 async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
@@ -163,7 +157,7 @@ async def finalize_photos(message: types.Message, state: FSMContext, data: dict)
     Завершает обработку после сохранения двух фото.
     """
     await message.answer("🎉 Спасибо! Обе фотографии загружены и сохранены.")
-    logging.info(f"Финализированные фото: {data['photos']}")
+    logging.info(f"Финализированные фото: {shared_data['photos']}")
     await add_lucky_ticket(message, state)
 
 
@@ -179,7 +173,7 @@ async def add_lucky_ticket(message: types.Message, state: FSMContext):
     )
     async with state.proxy() as data:
         data['lucky_ticket'] = random_string
-    await db.add_item(pool, state, message.from_user.id)
+    await db.add_item(pool, state, shared_data, message.from_user.id)
     await botStages.UserAdvancedScreenplay.advanced.set()
     await advanced_stage(message)
 
