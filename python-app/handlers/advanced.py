@@ -158,5 +158,4 @@ def register_advanced_handlers(dp: Dispatcher):
     dp.register_message_handler(additional_product, state=botStages.UserAdvancedScreenplay.advanced_product)
     dp.register_message_handler(additional_photo, state=botStages.UserAdvancedScreenplay.advanced_photo,
                                 content_types=types.ContentType.PHOTO)
-    dp.register_message_handler(additional_lucky_ticket, state=botStages.UserAdvancedScreenplay.advanced_lucky_ticket)
     dp.register_message_handler(advanced_stage, state=botStages.UserAdvancedScreenplay.advanced)

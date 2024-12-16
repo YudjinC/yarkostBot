@@ -195,4 +195,3 @@ def register_registration_handlers(dp: Dispatcher):
     dp.register_message_handler(add_product, state=botStages.UserRegistrationScreenplay.product)
     dp.register_message_handler(add_photos, state=botStages.UserRegistrationScreenplay.photo_upload,
                                 content_types=types.ContentType.PHOTO)
-    dp.register_message_handler(add_lucky_ticket, state=botStages.UserRegistrationScreenplay.lucky_ticket)

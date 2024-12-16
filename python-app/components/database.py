@@ -74,7 +74,7 @@ async def add_item(pool, state, user_id):
                 data['email'],
                 data['birthday'],
                 [data['product']],
-                data['photo'],
+                data['photos'],
                 [data['lucky_ticket']],
                 user_id
             )
@@ -92,7 +92,7 @@ async def additional_item(pool, state, user_id):
                 WHERE tg_id = $4
                 """,
                 [data['product']],
-                [data['photo']],
+                data['photos'],
                 [data['lucky_ticket']],
                 user_id
             )
