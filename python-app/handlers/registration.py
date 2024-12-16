@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
@@ -11,12 +13,11 @@ from handlers.advanced import advanced_stage
 import logging
 import random
 import string
-import re
-from collections import defaultdict
 
 EMAIL_REGEX = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
 
-photo_groups = defaultdict(list)
+MAX_PHOTOS = 2
+state_lock = asyncio.Lock()
 
 
 async def play(callback_query: types.CallbackQuery):
@@ -75,6 +76,69 @@ async def add_email(message: types.Message, state: FSMContext):
         )
 
 
+async def add_photos(message: types.Message, state: FSMContext):
+    """
+    Обработчик фотографий: вызывает добавление фото через очередь задач.
+    """
+    logging.info(f"Получено сообщение: {message}")
+
+    # Проверяем наличие фото
+    if not message.photo:
+        await message.answer("⚠ Пожалуйста, отправьте фотографию.")
+        return
+
+    file_id = message.photo[-1].file_id
+
+    async with state_lock:  # Блокируем доступ к добавлению фото
+        await add_photo_to_queue(file_id, message, state)
+
+
+async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMContext):
+    """
+    Добавляет фото в очередь, проверяет лимит и выполняет финализацию.
+    """
+    async with state.proxy() as data:
+        # Инициализируем очередь и сохранённые ссылки
+        if 'photos' not in data:
+            data['photos'] = []
+
+        # Проверяем лимит
+        if len(data['photos']) >= MAX_PHOTOS:
+            logging.warning(f"Лимит фото достигнут. Игнорируем фото: {file_id}")
+            return
+
+        # Добавляем фото и сохраняем
+        logging.info(f"Добавляем фото: {file_id}")
+        photo_url = await save_photo_to_storage(file_id, message)
+        data['photos'].append(photo_url)
+
+        if len(data['photos']) == 1:
+            await message.answer("✅ Поздравляю, ваш **чек** сохранён!")
+        elif len(data['photos']) == MAX_PHOTOS:
+            await message.answer("✅ Поздравляю, ваш **отзыв** сохранён!")
+            await finalize_photos(message, data)
+
+
+async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
+    """
+    Сохраняет фото в хранилище и возвращает ссылку.
+    """
+    random_string = ''.join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=6))
+    filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
+    photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
+    logging.info(f"Фото сохранено на сервере: {photo_url}")
+    return photo_url
+
+
+async def finalize_photos(message: types.Message, data: dict):
+    """
+    Завершает обработку после сохранения двух фото.
+    """
+    await message.answer("🎉 Спасибо! Обе фотографии загружены и сохранены.")
+    logging.info(f"Финализированные фото: {data['photos']}")
+    await add_lucky_ticket(message, FSMContext)
+
+
 async def add_birthday(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['birthday'] = message.text
@@ -110,105 +174,6 @@ async def dont_added_photo2(message: types.Message):
     await message.answer(
         f'Вы не отправили фотографию...😑'
     )
-
-
-# async def add_photo1(message: types.Message, state: FSMContext):
-#     # await state.reset_state(with_data=False)
-#     async with state.proxy() as data:
-#         file_id = message.photo[-1].file_id
-#         random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-#         filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
-#
-#         photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
-#         current_state = await state.get_state()
-#         await message.answer(f'test1 {current_state}')
-#         if 'photo' not in data:
-#             data['photo'] = []
-#         data['photo'].append(photo_url)
-#     await botStages.UserRegistrationScreenplay.photo2.set()
-#
-#
-# async def add_photo2(message: types.Message, state: FSMContext):
-#     async with state.proxy() as data:
-#         file_id = message.photo[-1].file_id
-#         random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-#         filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
-#
-#         photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
-#         current_state = await state.get_state()
-#         await message.answer(f'test2 {current_state}')
-#
-#         data['photo'].append(photo_url)
-#
-#     await message.answer(f'test3 {state.get_state()}')
-#
-#     await botStages.UserRegistrationScreenplay.photo2.set()
-
-async def add_photos(message: types.Message, state: FSMContext):
-    logging.info(f"Получено сообщение: {message}")  # Логирование всего сообщения
-
-    async with state.proxy() as data:
-        # Инициализация данных состояния
-        if 'photos' not in data:
-            data['photos'] = []
-        if 'media_group_id' not in data:
-            data['media_group_id'] = None
-
-        # Обработка группированных фото
-        if message.media_group_id:
-            logging.info(f"Обнаружена media_group_id: {message.media_group_id}")
-            photo_groups[message.media_group_id].append(message.photo[-1].file_id)
-
-            # Проверяем, завершена ли группа (Telegram автоматически завершает отправку)
-            if len(photo_groups[message.media_group_id]) >= 2:  # Обрабатываем первую пару фото
-                photos = photo_groups.pop(message.media_group_id)[:2]
-                logging.info(f"Группа завершена, обрабатываем фото: {photos}")
-
-                # Сохраняем фото и отправляем сообщения
-                for i, file_id in enumerate(photos):
-                    photo_url = await save_photo_to_storage(file_id, message)
-                    data['photos'].append(photo_url)
-                    if i == 0:
-                        await message.answer("✅ Поздравляю, ваш **чек** сохранён!")
-                        logging.info(f"Чек сохранен: {photo_url}")
-                    elif i == 1:
-                        await message.answer("✅ Поздравляю, ваш **отзыв** сохранён!")
-                        logging.info(f"Отзыв сохранен: {photo_url}")
-
-                await finalize_photos(message, data)
-            else:
-                logging.info(f"Фото добавлено в группу: {len(photo_groups[message.media_group_id])}")
-        else:
-            # Обработка одиночного фото
-            logging.info("Обнаружено одиночное фото.")
-            file_id = message.photo[-1].file_id
-            photo_url = await save_photo_to_storage(file_id, message)
-            data['photos'].append(photo_url)
-            if len(data['photos']) == 1:
-                await message.answer("✅ Поздравляю, ваш **чек** сохранён!")
-                logging.info(f"Чек сохранен: {photo_url}")
-            elif len(data['photos']) == 2:
-                await message.answer("✅ Поздравляю, ваш **отзыв** сохранён!")
-                logging.info(f"Отзыв сохранен: {photo_url}")
-                await finalize_photos(message, data)
-            else:
-                logging.warning("Получено больше 2 фото, игнорируем.")
-
-
-async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
-    """Функция сохранения фото в хранилище."""
-    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-    filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
-    photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
-    logging.info(f"Фото сохранено: {photo_url}")
-    return photo_url
-
-
-async def finalize_photos(message: types.Message, data: dict):
-    """Завершение этапа загрузки фотографий."""
-    logging.info(f"Финализируем данные: {data}")
-    await message.answer("Спасибо! Обе фотографии загружены. Начинаю проверку...")
-    await add_lucky_ticket(message, FSMContext)
 
 
 async def add_lucky_ticket(message: types.Message, state: FSMContext):
