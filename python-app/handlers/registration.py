@@ -142,7 +142,7 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
             await message.answer("✅ Поздравляю, ваш **чек** сохранён!")
         elif len(data['photos']) == MAX_PHOTOS:
             await message.answer("✅ Поздравляю, ваш **отзыв** сохранён!")
-            await finalize_photos(message, data)
+            await finalize_photos(message, state, data)
 
 
 async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
