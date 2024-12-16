@@ -142,6 +142,7 @@ async def advanced_stage(message: types.Message):
         f'Зайдите в личный Кабинет или зарегестрируйте покупку!',
         reply_markup=kb.lkKeyboard
     )
+    shared_data['photos'] = []
 
 
 def register_advanced_handlers(dp: Dispatcher):
