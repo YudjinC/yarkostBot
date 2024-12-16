@@ -15,6 +15,7 @@ import random
 import string
 
 MAX_PHOTOS = 2
+shared_data = {"photos": []}
 state_lock = asyncio.Lock()
 
 
@@ -78,19 +79,20 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
             data['photos'] = []
 
         # Проверяем лимит
-        if len(data['photos']) >= MAX_PHOTOS:
+        if len(shared_data['photos']) >= MAX_PHOTOS:
             logging.warning(f"Лимит фото достигнут. Игнорируем фото: {file_id}")
             return
 
         # Добавляем фото и сохраняем
         logging.info(f"Добавляем фото: {file_id}")
         photo_url = await save_photo_to_storage(file_id, message)
-        data['photos'].append(photo_url)
+        shared_data['photos'].append(photo_url)
 
-        if len(data['photos']) == 1:
+        if len(shared_data['photos']) == 1:
             await message.answer("✅ Поздравляю, ваш **чек** сохранён!")
-        elif len(data['photos']) == MAX_PHOTOS:
+        elif len(shared_data['photos']) == MAX_PHOTOS:
             await message.answer("✅ Поздравляю, ваш **отзыв** сохранён!")
+            data['photos'] = shared_data['photos']
             await finalize_photos(message, state, data)
 
 
