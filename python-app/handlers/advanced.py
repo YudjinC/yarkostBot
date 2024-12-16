@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.types import InputFile
@@ -8,8 +10,12 @@ from components import keyboards as kb
 from components import s3
 from modules import botStages
 
+import logging
 import random
 import string
+
+MAX_PHOTOS = 2
+state_lock = asyncio.Lock()
 
 
 async def personal_account(message: types.Message):
@@ -43,25 +49,68 @@ async def additional_product(message: types.Message,  state: FSMContext):
         reply_markup=ReplyKeyboardRemove()
     )
     await botStages.UserAdvancedScreenplay.next()
-    await additional_photo(message, state)
-
-
-async def dont_added_photo(message: types.Message):
-    await message.answer(
-        f'Вы не отправили фотографии...😑'
-    )
 
 
 async def additional_photo(message: types.Message, state: FSMContext):
+    """
+    Обработчик фотографий: вызывает добавление фото через очередь задач.
+    """
+    logging.info(f"Получено сообщение: {message}")
+
+    # Проверяем наличие фото
+    if not message.photo:
+        await message.answer("⚠ Пожалуйста, отправьте фотографию.")
+        return
+
+    file_id = message.photo[-1].file_id
+
+    async with state_lock:  # Блокируем доступ к добавлению фото
+        await add_photo_to_queue(file_id, message, state)
+
+
+async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMContext):
+    """
+    Добавляет фото в очередь, проверяет лимит и выполняет финализацию.
+    """
     async with state.proxy() as data:
-        file_id = message.photo[-1].file_id
-        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-        filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
+        # Инициализируем очередь и сохранённые ссылки
+        if 'photos' not in data:
+            data['photos'] = []
 
-        photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
+        # Проверяем лимит
+        if len(data['photos']) >= MAX_PHOTOS:
+            logging.warning(f"Лимит фото достигнут. Игнорируем фото: {file_id}")
+            return
 
-        data['photo'] = photo_url
-    await botStages.UserAdvancedScreenplay.next()
+        # Добавляем фото и сохраняем
+        logging.info(f"Добавляем фото: {file_id}")
+        photo_url = await save_photo_to_storage(file_id, message)
+        data['photos'].append(photo_url)
+
+        if len(data['photos']) == 1:
+            await message.answer("✅ Поздравляю, ваш **чек** сохранён!")
+        elif len(data['photos']) == MAX_PHOTOS:
+            await message.answer("✅ Поздравляю, ваш **отзыв** сохранён!")
+            await finalize_photos(message, data)
+
+
+async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
+    """
+    Сохраняет фото в хранилище и возвращает ссылку.
+    """
+    random_string = ''.join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=6))
+    filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
+    photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
+    logging.info(f"Фото сохранено на сервере: {photo_url}")
+    return photo_url
+
+
+async def finalize_photos(message: types.Message, state: FSMContext, data: dict):
+    """
+    Завершает обработку после сохранения двух фото.
+    """
+    await message.answer("🎉 Спасибо! Обе фотографии загружены и сохранены.")
+    logging.info(f"Финализированные фото: {data['photos']}")
     await additional_lucky_ticket(message, state)
 
 
@@ -100,10 +149,12 @@ async def advanced_stage(message: types.Message):
 
 
 def register_advanced_handlers(dp: Dispatcher):
-    dp.register_message_handler(personal_account, state=botStages.UserAdvancedScreenplay.advanced, text=['Личный кабинет'])
-    dp.register_message_handler(additional_play, state=botStages.UserAdvancedScreenplay.advanced, text=['Дополнительный купон'])
+    dp.register_message_handler(personal_account, state=botStages.UserAdvancedScreenplay.advanced,
+                                text=['Личный кабинет'])
+    dp.register_message_handler(additional_play, state=botStages.UserAdvancedScreenplay.advanced,
+                                text=['Дополнительный купон'])
     dp.register_message_handler(additional_product, state=botStages.UserAdvancedScreenplay.advanced_product)
-    dp.register_message_handler(dont_added_photo, state=botStages.UserAdvancedScreenplay.advanced_photo)
-    dp.register_message_handler(additional_photo, state=botStages.UserAdvancedScreenplay.advanced_photo, content_types=['photo'])
+    dp.register_message_handler(additional_photo, state=botStages.UserAdvancedScreenplay.advanced_photo,
+                                content_types=types.ContentType.PHOTO)
     dp.register_message_handler(additional_lucky_ticket, state=botStages.UserAdvancedScreenplay.advanced_lucky_ticket)
     dp.register_message_handler(advanced_stage, state=botStages.UserAdvancedScreenplay.advanced)

@@ -13,6 +13,7 @@ from handlers.advanced import advanced_stage
 import logging
 import random
 import string
+import re
 
 EMAIL_REGEX = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
 
@@ -76,6 +77,31 @@ async def add_email(message: types.Message, state: FSMContext):
         )
 
 
+async def add_birthday(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['birthday'] = message.text
+    await message.answer(
+        f'Супер!\n'
+        f'Теперь выберите купленный товар и нажмите на кнопку!',
+        reply_markup=kb.productKeyboard
+    )
+    await botStages.UserRegistrationScreenplay.next()
+
+
+async def add_product(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['product'] = message.text
+    await message.bot.send_photo(
+        message.chat.id,
+        photo=InputFile('photos/marketplaces.jpg'),
+        caption=f'💖 Оставьте честный отзыв о спрей-гидролат от YARKOST\n'
+                f'📎Прикрепите здесь 2 скрина:\n'
+                f'чек об оплате с маркетплейса и отзыв с артикулом товара, воспользовавшись скрепкой около клавиатуры.',
+        reply_markup=ReplyKeyboardRemove()
+    )
+    await botStages.UserRegistrationScreenplay.next()
+
+
 async def add_photos(message: types.Message, state: FSMContext):
     """
     Обработчик фотографий: вызывает добавление фото через очередь задач.
@@ -130,50 +156,13 @@ async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
     return photo_url
 
 
-async def finalize_photos(message: types.Message, data: dict):
+async def finalize_photos(message: types.Message, state: FSMContext, data: dict):
     """
     Завершает обработку после сохранения двух фото.
     """
     await message.answer("🎉 Спасибо! Обе фотографии загружены и сохранены.")
     logging.info(f"Финализированные фото: {data['photos']}")
-    await add_lucky_ticket(message, FSMContext)
-
-
-async def add_birthday(message: types.Message, state: FSMContext):
-    async with state.proxy() as data:
-        data['birthday'] = message.text
-    await message.answer(
-        f'Супер!\n'
-        f'Теперь выберите купленный товар и нажмите на кнопку!',
-        reply_markup=kb.productKeyboard
-    )
-    await botStages.UserRegistrationScreenplay.next()
-
-
-async def add_product(message: types.Message, state: FSMContext):
-    async with state.proxy() as data:
-        data['product'] = message.text
-    await message.bot.send_photo(
-        message.chat.id,
-        photo=InputFile('photos/marketplaces.jpg'),
-        caption=f'💖 Оставьте честный отзыв о спрей-гидролат от YARKOST\n'
-                f'📎Прикрепите здесь 2 скрина:\n'
-                f'чек об оплате с маркетплейса и отзыв с артикулом товара, воспользовавшись скрепкой около клавиатуры.',
-        reply_markup=ReplyKeyboardRemove()
-    )
-    await botStages.UserRegistrationScreenplay.next()
-
-
-async def dont_added_photo1(message: types.Message):
-    await message.answer(
-        f'Вы не отправили фотографию...😑'
-    )
-
-
-async def dont_added_photo2(message: types.Message):
-    await message.answer(
-        f'Вы не отправили фотографию...😑'
-    )
+    await add_lucky_ticket(message, state)
 
 
 async def add_lucky_ticket(message: types.Message, state: FSMContext):
@@ -202,12 +191,6 @@ def register_registration_handlers(dp: Dispatcher):
     dp.register_message_handler(add_email, state=botStages.UserRegistrationScreenplay.email)
     dp.register_message_handler(add_birthday, state=botStages.UserRegistrationScreenplay.birthday)
     dp.register_message_handler(add_product, state=botStages.UserRegistrationScreenplay.product)
-    # dp.register_message_handler(dont_added_photo1, lambda message: not message.photo,
-    #                             state=botStages.UserRegistrationScreenplay.photo1)
-    # dp.register_message_handler(dont_added_photo2, lambda message: not message.photo,
-    #                             state=botStages.UserRegistrationScreenplay.photo2)
-    # dp.register_message_handler(add_photo1, state=botStages.UserRegistrationScreenplay.photo1, content_types=['photo'])
-    # dp.register_message_handler(add_photo2, state=botStages.UserRegistrationScreenplay.photo2, content_types=['photo'])
     dp.register_message_handler(add_photos, state=botStages.UserRegistrationScreenplay.photo_upload,
                                 content_types=types.ContentType.PHOTO)
     dp.register_message_handler(add_lucky_ticket, state=botStages.UserRegistrationScreenplay.lucky_ticket)
