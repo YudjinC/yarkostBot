@@ -152,7 +152,7 @@ async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
     return photo_url
 
 
-async def finalize_photos(message: types.Message, state: FSMContext, data: dict):
+async def finalize_photos(message: types.Message, state: FSMContext):
     """
     Завершает обработку после сохранения двух фото.
     """
