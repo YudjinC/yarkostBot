@@ -10,12 +10,10 @@ from components import keyboards as kb
 from components import s3
 from modules import botStages
 from handlers.advanced import advanced_stage
-import mimetypes
 import logging
 import random
 import string
 import re
-import os
 
 EMAIL_REGEX = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
 
@@ -107,8 +105,8 @@ async def add_product(message: types.Message, state: FSMContext):
 
 async def processing_document_when_uploading_photo(message: types.Message):
     await message.reply(
-        f'Пожалуйста, отправьте сжатое фото (поставьте или не убирайте галочку при загрузке на'
-        f'"Сжать изображение")'
+        f'Пожалуйста, отправьте сжатое фото (поставьте или не убирайте галочку при загрузке на '
+        f'"Сжать изображение") 😶'
     )
 
 
