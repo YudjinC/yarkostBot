@@ -8,9 +8,10 @@ import os
 load_dotenv()
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost")
 MINIO_PORT = int(os.getenv("MINIO_PORT", 9000))
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "admin")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "admin")
 MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME", "photos")
+PHOTO_STORAGE_ENDPOINT = os.getenv("PHOTO_STORAGE_ENDPOINT", f"http://{MINIO_ENDPOINT}:9001")
 
 minio_client = Minio(
     f"{MINIO_ENDPOINT}:{MINIO_PORT}",
@@ -54,5 +55,5 @@ async def save_photo_to_minio(bot, file_id: str, filename: str, user_id: str) ->
         if os.path.exists(photo_path):
             os.remove(photo_path)
 
-    file_url = f"http://{MINIO_ENDPOINT}:{MINIO_PORT}/{MINIO_BUCKET_NAME}/{object_name}"
+    file_url = f"{PHOTO_STORAGE_ENDPOINT}/{MINIO_BUCKET_NAME}/{object_name}"
     return file_url
