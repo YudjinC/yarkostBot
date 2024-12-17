@@ -84,9 +84,9 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
     shared_data['photos'].append(photo_url)
 
     if len(shared_data['photos']) == 1:
-        await message.answer("✅ Поздравляю, ваш **чек** сохранён!")
+        await message.answer("✅ Поздравляю, первая фотография сохранена!")
     elif len(shared_data['photos']) == MAX_PHOTOS:
-        await message.answer("✅ Поздравляю, ваш **отзыв** сохранён!")
+        await message.answer("✅ Поздравляю, ваша вторая фотография сохранена!")
         await finalize_photos(message, state)
 
 
