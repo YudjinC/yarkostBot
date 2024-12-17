@@ -1,6 +1,7 @@
 import asyncpg
 
 from datetime import date
+import logging
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -54,7 +55,7 @@ async def cmd_start_db(pool, user_id):
             await conn.execute("INSERT INTO users (tg_id) VALUES ($1)", user_id)
 
 
-async def add_item(pool, state, user_id):
+async def add_item(pool, state, shared_data, user_id):
     async with pool.acquire() as conn:
         async with state.proxy() as data:
             await conn.execute(
@@ -74,13 +75,13 @@ async def add_item(pool, state, user_id):
                 data['email'],
                 data['birthday'],
                 [data['product']],
-                [data['photo']],
+                shared_data['photos'],
                 [data['lucky_ticket']],
                 user_id
             )
 
 
-async def additional_item(pool, state, user_id):
+async def additional_item(pool, state, shared_data, user_id):
     async with pool.acquire() as conn:
         async with state.proxy() as data:
             await conn.execute(
@@ -92,7 +93,7 @@ async def additional_item(pool, state, user_id):
                 WHERE tg_id = $4
                 """,
                 [data['product']],
-                [data['photo']],
+                shared_data['photos'],
                 [data['lucky_ticket']],
                 user_id
             )

@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
@@ -8,12 +10,16 @@ from components import keyboards as kb
 from components import s3
 from modules import botStages
 from handlers.advanced import advanced_stage
-
+import logging
 import random
 import string
 import re
 
 EMAIL_REGEX = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+
+MAX_PHOTOS = 2
+shared_data = {"photos": []}
+state_lock = asyncio.Lock()
 
 
 async def play(callback_query: types.CallbackQuery):
@@ -97,23 +103,61 @@ async def add_product(message: types.Message, state: FSMContext):
     await botStages.UserRegistrationScreenplay.next()
 
 
-async def dont_added_photo(message: types.Message):
-    await message.answer(
-        f'Вы не отправили фотографии...😑'
-    )
+async def add_photos(message: types.Message, state: FSMContext):
+    """
+    Обработчик фотографий: вызывает добавление фото через очередь задач.
+    """
+    logging.info(f"Получено сообщение: {message}")
+
+    # Проверяем наличие фото
+    if not message.photo:
+        await message.answer("⚠ Пожалуйста, отправьте фотографию.")
+        return
+
+    file_id = message.photo[-1].file_id
+
+    async with state_lock:  # Блокируем доступ к добавлению фото
+        await add_photo_to_queue(file_id, message, state)
 
 
-async def add_photo(message: types.Message, state: FSMContext):
-    async with state.proxy() as data:
-        file_id = message.photo[-1].file_id
-        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-        filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
+async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMContext):
+    """
+    Добавляет фото в очередь, проверяет лимит и выполняет финализацию.
+    """
+    # Проверяем лимит
+    if len(shared_data['photos']) >= MAX_PHOTOS:
+        logging.warning(f"Лимит фото достигнут. Игнорируем фото: {file_id}")
+        return
 
-        photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
+    # Добавляем фото и сохраняем
+    logging.info(f"Добавляем фото: {file_id}")
+    photo_url = await save_photo_to_storage(file_id, message)
+    shared_data['photos'].append(photo_url)
 
-        data['photo'] = photo_url
+    if len(shared_data['photos']) == 1:
+        await message.answer("✅ Поздравляю, ваш **чек** сохранён!")
+    elif len(shared_data['photos']) == MAX_PHOTOS:
+        await message.answer("✅ Поздравляю, ваш **отзыв** сохранён!")
+        await finalize_photos(message, state)
 
-    await botStages.UserRegistrationScreenplay.next()
+
+async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
+    """
+    Сохраняет фото в хранилище и возвращает ссылку.
+    """
+    random_string = ''.join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=6))
+    filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
+    photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
+    logging.info(f"Фото сохранено на сервере: {photo_url}")
+    return photo_url
+
+
+async def finalize_photos(message: types.Message, state: FSMContext):
+    """
+    Завершает обработку после сохранения двух фото.
+    """
+    await message.answer("🎉 Спасибо! Обе фотографии загружены и сохранены.")
+    logging.info(f"Финализированные фото: {shared_data['photos']}")
     await add_lucky_ticket(message, state)
 
 
@@ -129,19 +173,20 @@ async def add_lucky_ticket(message: types.Message, state: FSMContext):
     )
     async with state.proxy() as data:
         data['lucky_ticket'] = random_string
-    await db.add_item(pool, state, message.from_user.id)
-    await botStages.UserRegistrationScreenplay.next()
+    await db.add_item(pool, state, shared_data, message.from_user.id)
+    await state.finish()
+    await botStages.UserAdvancedScreenplay.advanced.set()
     await advanced_stage(message)
 
 
 def register_registration_handlers(dp: Dispatcher):
     dp.register_callback_query_handler(play, lambda c: c.data == 'play')
     dp.register_message_handler(add_nickname, state=botStages.UserRegistrationScreenplay.fio)
-    dp.register_message_handler(add_contact, state=botStages.UserRegistrationScreenplay.contact, content_types=types.ContentType.CONTACT)
+    dp.register_message_handler(add_contact, state=botStages.UserRegistrationScreenplay.contact,
+                                content_types=types.ContentType.CONTACT)
     dp.register_message_handler(contact_not_shared, state=botStages.UserRegistrationScreenplay.contact)
     dp.register_message_handler(add_email, state=botStages.UserRegistrationScreenplay.email)
     dp.register_message_handler(add_birthday, state=botStages.UserRegistrationScreenplay.birthday)
     dp.register_message_handler(add_product, state=botStages.UserRegistrationScreenplay.product)
-    dp.register_message_handler(dont_added_photo, lambda message: not message.photo, state=botStages.UserRegistrationScreenplay.photo)
-    dp.register_message_handler(add_photo, state=botStages.UserRegistrationScreenplay.photo, content_types=['photo'])
-    dp.register_message_handler(add_lucky_ticket, state=botStages.UserRegistrationScreenplay.lucky_ticket)
+    dp.register_message_handler(add_photos, state=botStages.UserRegistrationScreenplay.photo_upload,
+                                content_types=types.ContentType.PHOTO)

@@ -7,17 +7,13 @@ class UserRegistrationScreenplay(StatesGroup):
     email = State()
     birthday = State()
     product = State()
-    photo = State()
-    # photo1 = State()
-    # photo2 = State()
-    lucky_ticket = State()
+    photo_upload = State()
 
 
 class UserAdvancedScreenplay(StatesGroup):
     advanced = State()
     advanced_product = State()
     advanced_photo = State()
-    advanced_lucky_ticket = State()
 
 
 class AdminScreenPlay(StatesGroup):
