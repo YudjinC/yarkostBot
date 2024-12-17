@@ -110,10 +110,9 @@ async def check_advanced_state(pool, user_id):
             user_id
         )
         if result:
-            return all(
-                field and (not isinstance(field, list) or len(field) > 0)
-                for field in result
-            )
+            lucky_ticket = result["lucky_ticket"]
+            if isinstance(lucky_ticket, list) and any(ticket is not None for ticket in lucky_ticket):
+                return True
         return False
 
 
