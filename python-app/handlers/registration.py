@@ -147,11 +147,18 @@ async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
     """
     Сохраняет фото в хранилище и возвращает ссылку.
     """
-    file = await message.bot.get_file(file_id)
-    file_extension = os.path.splitext(file.file_path)[1]
-    if not file_extension:
-        mime_type, _ = mimetypes.guess_type(file.file_path)
-        file_extension = mimetypes.guess_extension(mime_type) or ".jpg"
+    mime_type = None
+    if message.document:
+        mime_type = message.document.mime_type
+    elif message.photo:
+        mime_type = "image/jpeg"
+
+    file_extension = None
+    if mime_type:
+        file_extension = mimetypes.guess_extension(mime_type)
+    else:
+        file = await message.bot.get_file(file_id)
+        file_extension = os.path.splitext(file.file_path)[1]
 
     random_string = ''.join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=10))
     filename = f"{random_string}_photo{file_extension}"
