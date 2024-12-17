@@ -53,6 +53,13 @@ async def additional_product(message: types.Message,  state: FSMContext):
     shared_data['photos'] = []
 
 
+async def processing_document_when_uploading_photo(message: types.Message):
+    await message.reply(
+        f'Пожалуйста, отправьте сжатое фото (поставьте или не убирайте галочку при загрузке на '
+        f'"Сжать изображение") 😶'
+    )
+
+
 async def additional_photo(message: types.Message, state: FSMContext):
     """
     Обработчик фотографий: вызывает добавление фото через очередь задач.
@@ -152,6 +159,9 @@ def register_advanced_handlers(dp: Dispatcher):
     dp.register_message_handler(additional_play, state=botStages.UserAdvancedScreenplay.advanced,
                                 text=['Дополнительный купон'])
     dp.register_message_handler(additional_product, state=botStages.UserAdvancedScreenplay.advanced_product)
+    dp.register_message_handler(processing_document_when_uploading_photo,
+                                state=botStages.UserAdvancedScreenplay.advanced_photo,
+                                content_types=types.ContentType.DOCUMENT)
     dp.register_message_handler(additional_photo, state=botStages.UserAdvancedScreenplay.advanced_photo,
                                 content_types=types.ContentType.PHOTO)
     dp.register_message_handler(advanced_stage, state=botStages.UserAdvancedScreenplay.advanced)

@@ -49,7 +49,7 @@ async def save_photo_to_minio(bot, file_id: str, filename: str, user_id: str) ->
             MINIO_BUCKET_NAME,
             object_name,
             photo_path,
-            "image/jpeg"
+            "image/jpg"
         )
     finally:
         if os.path.exists(photo_path):
