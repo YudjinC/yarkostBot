@@ -174,6 +174,7 @@ async def add_lucky_ticket(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['lucky_ticket'] = random_string
     await db.add_item(pool, state, shared_data, message.from_user.id)
+    await state.finish()
     await botStages.UserAdvancedScreenplay.advanced.set()
     await advanced_stage(message)
 

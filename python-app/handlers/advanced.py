@@ -50,6 +50,7 @@ async def additional_product(message: types.Message,  state: FSMContext):
         reply_markup=ReplyKeyboardRemove()
     )
     await botStages.UserAdvancedScreenplay.next()
+    shared_data['photos'] = []
 
 
 async def additional_photo(message: types.Message, state: FSMContext):
@@ -83,9 +84,10 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
     photo_url = await save_photo_to_storage(file_id, message)
     shared_data['photos'].append(photo_url)
 
-    if len(shared_data['photos']) == 1:
+    current_state = await state.get_state()
+    if (len(shared_data['photos']) == 1) and (current_state == botStages.UserAdvancedScreenplay.advanced_photo):
         await message.answer("✅ Поздравляю, первая фотография сохранена!")
-    elif len(shared_data['photos']) == MAX_PHOTOS:
+    elif (len(shared_data['photos']) == MAX_PHOTOS) and (current_state == botStages.UserAdvancedScreenplay.advanced_photo):
         await message.answer("✅ Поздравляю, ваша вторая фотография сохранена!")
         await finalize_photos(message, state)
 
@@ -112,17 +114,18 @@ async def finalize_photos(message: types.Message, state: FSMContext):
 
 async def additional_lucky_ticket(message: types.Message, state: FSMContext):
     pool = await message.bot.get('pg_pool')
+    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+    async with state.proxy() as data:
+        data['lucky_ticket'] = random_string
+    await db.additional_item(pool, state, shared_data, message.from_user.id)
+    await state.finish()
     await message.answer(
         f'Начинаю проверку, секундочку...'
     )
-    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
     await message.answer(
         f'Поздравляю, ваш отзыв зарегистрирован!\n'
         f'Номер вашего счастливого купона: {random_string}'
     )
-    async with state.proxy() as data:
-        data['lucky_ticket'] = random_string
-    await db.additional_item(pool, state, shared_data, message.from_user.id)
     await botStages.UserAdvancedScreenplay.advanced.set()
     await advanced_stage(message)
 
@@ -142,7 +145,6 @@ async def advanced_stage(message: types.Message):
         f'Зайдите в личный Кабинет или зарегестрируйте покупку!',
         reply_markup=kb.lkKeyboard
     )
-    shared_data['photos'] = []
 
 
 def register_advanced_handlers(dp: Dispatcher):
