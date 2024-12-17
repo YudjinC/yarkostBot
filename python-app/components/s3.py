@@ -11,7 +11,7 @@ MINIO_PORT = int(os.getenv("MINIO_PORT", 9000))
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "admin")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "admin")
 MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME", "photos")
-PHOTO_STORAGE_ENDPOINT = os.getenv("PHOTO_STORAGE_ENDPOINT", f"http://{MINIO_ENDPOINT}:9001")
+PHOTO_STORAGE_ENDPOINT = os.getenv("PHOTO_STORAGE_ENDPOINT", f"http://minio:9000")
 
 minio_client = Minio(
     f"{MINIO_ENDPOINT}:{MINIO_PORT}",
