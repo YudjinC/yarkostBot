@@ -10,10 +10,12 @@ from components import keyboards as kb
 from components import s3
 from modules import botStages
 from handlers.advanced import advanced_stage
+import mimetypes
 import logging
 import random
 import string
 import re
+import os
 
 EMAIL_REGEX = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
 
@@ -145,8 +147,15 @@ async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
     """
     Сохраняет фото в хранилище и возвращает ссылку.
     """
+    file = await message.bot.get_file(file_id)
+    file_extension = os.path.splitext(file.file_path)[1]
+    if not file_extension:
+        mime_type, _ = mimetypes.guess_type(file.file_path)
+        file_extension = mimetypes.guess_extension(mime_type) or ".jpg"
+
     random_string = ''.join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=10))
-    filename = f"{random_string}_photo.jpg"
+    filename = f"{random_string}_photo{file_extension}"
+
     photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename, message.from_user.id)
     logging.info(f"Фото сохранено на сервере: {photo_url}")
     return photo_url
