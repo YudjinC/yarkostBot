@@ -6,6 +6,7 @@ services:
     container_name: yarkostBot
     env_file:
       - python-app/.env
+    restart: always
     depends_on:
       pg:
         condition: service_healthy
@@ -21,6 +22,7 @@ services:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
@@ -39,6 +41,7 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
       interval: 5s
