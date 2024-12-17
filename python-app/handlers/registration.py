@@ -105,6 +105,13 @@ async def add_product(message: types.Message, state: FSMContext):
     await botStages.UserRegistrationScreenplay.next()
 
 
+async def processing_document_when_uploading_photo(message: types.Message):
+    await message.reply(
+        f'Пожалуйста, отправьте сжатое фото (поставьте или не убирайте галочку при загрузке на'
+        f'"Сжать изображение")'
+    )
+
+
 async def add_photos(message: types.Message, state: FSMContext):
     """
     Обработчик фотографий: вызывает добавление фото через очередь задач.
@@ -147,21 +154,8 @@ async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
     """
     Сохраняет фото в хранилище и возвращает ссылку.
     """
-    mime_type = None
-    if message.document:
-        mime_type = message.document.mime_type
-    elif message.photo:
-        mime_type = "image/jpeg"
-
-    file_extension = None
-    if mime_type:
-        file_extension = mimetypes.guess_extension(mime_type)
-    else:
-        file = await message.bot.get_file(file_id)
-        file_extension = os.path.splitext(file.file_path)[1]
-
     random_string = ''.join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=10))
-    filename = f"{random_string}_photo{file_extension}"
+    filename = f"{random_string}_photo.jpg"
 
     photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename, message.from_user.id)
     logging.info(f"Фото сохранено на сервере: {photo_url}")
@@ -204,5 +198,8 @@ def register_registration_handlers(dp: Dispatcher):
     dp.register_message_handler(add_email, state=botStages.UserRegistrationScreenplay.email)
     dp.register_message_handler(add_birthday, state=botStages.UserRegistrationScreenplay.birthday)
     dp.register_message_handler(add_product, state=botStages.UserRegistrationScreenplay.product)
+    dp.register_message_handler(processing_document_when_uploading_photo,
+                                state=botStages.UserRegistrationScreenplay.photo_upload,
+                                content_types=types.ContentType.DOCUMENT)
     dp.register_message_handler(add_photos, state=botStages.UserRegistrationScreenplay.photo_upload,
                                 content_types=types.ContentType.PHOTO)
