@@ -34,18 +34,19 @@ async def minio_start():
         print(f'[MINIO_ERROR] MinIO: {e}')
 
 
-async def save_photo_to_minio(bot, file_id: str, filename: str) -> str:
+async def save_photo_to_minio(bot, file_id: str, filename: str, user_id: str) -> str:
     file = await bot.get_file(file_id)
     photo_path = f"/tmp/{filename}"
 
     await bot.download_file(file_path=file.file_path, destination=photo_path)
 
+    object_name = f'{user_id}/{filename}'
     try:
         await loop.run_in_executor(
             None,
             minio_client.fput_object,
             MINIO_BUCKET_NAME,
-            filename,
+            object_name,
             photo_path,
             "image/jpeg"
         )
@@ -53,5 +54,5 @@ async def save_photo_to_minio(bot, file_id: str, filename: str) -> str:
         if os.path.exists(photo_path):
             os.remove(photo_path)
 
-    file_url = f"http://{MINIO_ENDPOINT}:{MINIO_PORT}/{MINIO_BUCKET_NAME}/{filename}"
+    file_url = f"http://{MINIO_ENDPOINT}:{MINIO_PORT}/{MINIO_BUCKET_NAME}/{user_id}/{object_name}"
     return file_url
