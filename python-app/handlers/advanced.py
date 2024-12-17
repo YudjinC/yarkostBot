@@ -96,9 +96,9 @@ async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
     """
     Сохраняет фото в хранилище и возвращает ссылку.
     """
-    random_string = ''.join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=6))
-    filename = f"user_{message.from_user.id}_{random_string}_photo.jpg"
-    photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename)
+    random_string = ''.join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=10))
+    filename = f"{random_string}_photo.jpg"
+    photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename, message.from_user.id)
     logging.info(f"Фото сохранено на сервере: {photo_url}")
     return photo_url
 
