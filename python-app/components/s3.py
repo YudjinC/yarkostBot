@@ -54,5 +54,5 @@ async def save_photo_to_minio(bot, file_id: str, filename: str, user_id: str) ->
         if os.path.exists(photo_path):
             os.remove(photo_path)
 
-    file_url = f"http://{MINIO_ENDPOINT}:{MINIO_PORT}/{MINIO_BUCKET_NAME}/{user_id}/{object_name}"
+    file_url = f"http://{MINIO_ENDPOINT}:{MINIO_PORT}/{MINIO_BUCKET_NAME}/{object_name}"
     return file_url
