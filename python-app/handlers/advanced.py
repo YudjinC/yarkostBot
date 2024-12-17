@@ -85,9 +85,9 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
     shared_data['photos'].append(photo_url)
 
     current_state = await state.get_state()
-    if (len(shared_data['photos']) == 1) and (current_state == botStages.UserAdvancedScreenplay.advanced_photo):
+    if (len(shared_data['photos']) == 1) and (current_state == botStages.UserAdvancedScreenplay.advanced_photo.state):
         await message.answer("✅ Поздравляю, первая фотография сохранена!")
-    elif (len(shared_data['photos']) == MAX_PHOTOS) and (current_state == botStages.UserAdvancedScreenplay.advanced_photo):
+    elif (len(shared_data['photos']) == MAX_PHOTOS) and (current_state == botStages.UserAdvancedScreenplay.advanced_photo.state):
         await message.answer("✅ Поздравляю, ваша вторая фотография сохранена!")
         await finalize_photos(message, state)
 
@@ -126,7 +126,6 @@ async def additional_lucky_ticket(message: types.Message, state: FSMContext):
         f'Поздравляю, ваш отзыв зарегистрирован!\n'
         f'Номер вашего счастливого купона: {random_string}'
     )
-    await botStages.UserAdvancedScreenplay.advanced.set()
     await advanced_stage(message)
 
 
