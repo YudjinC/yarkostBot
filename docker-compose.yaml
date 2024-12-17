@@ -9,8 +9,10 @@ services:
     env_file:
       - python-app/.env
     depends_on:
-      - pg
-      - minio
+      pg:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
 
   pg:
     image: postgres:15
@@ -21,6 +23,12 @@ services:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   minio:
     image: minio/minio:RELEASE.2024-11-07T00-52-20Z
@@ -33,6 +41,12 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
 volumes:
   postgres_data:
