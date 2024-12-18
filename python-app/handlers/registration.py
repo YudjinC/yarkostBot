@@ -2,11 +2,11 @@ import asyncio
 
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
-from aiogram.types import ReplyKeyboardRemove
-from aiogram.types import InputFile
+from aiogram.types import InputFile, ReplyKeyboardRemove
 
 from components import database as db
 from components import keyboards as kb
+from components import utils
 from components import s3
 from modules import botStages
 from handlers.advanced import advanced_stage
@@ -29,7 +29,8 @@ async def play(callback_query: types.CallbackQuery):
         await callback_query.bot.send_message(
             chat_id=callback_query.from_user.id,
             text=f'Как я могу к вам обращаться?\n\n'
-                 f'Напишите мне сюда сообщением⬇'
+                 f'Напишите мне сюда сообщением⬇',
+            reply_markup=kb.cancelKeyboard
         )
 
 
@@ -50,7 +51,7 @@ async def add_contact(message: types.Message, state: FSMContext):
         data['contact'] = contact.phone_number
     await message.answer(
         f'Если не дозвонимся, на какой адрес email писать поздравления с победой в розыгрыше?',
-        reply_markup=ReplyKeyboardRemove()
+        reply_markup=kb.cancelKeyboard
     )
     await botStages.UserRegistrationScreenplay.next()
 
@@ -69,7 +70,7 @@ async def add_email(message: types.Message, state: FSMContext):
             data['email'] = email
         await message.answer(
             f'Когда ваш день рождения? Хотим тепло вас поздравить и отправить подарок!💖',
-            reply_markup=ReplyKeyboardRemove()
+            reply_markup=kb.cancelKeyboard
         )
         await botStages.UserRegistrationScreenplay.next()
     else:
@@ -108,7 +109,7 @@ async def add_purchase_location(message: types.Message, state: FSMContext):
         await message.answer(
             f'Введите, пожалуйста, промокод 💗\n'
             f'Это должно быть одно слово без пробелов!!',
-            reply_markup=ReplyKeyboardRemove()
+            reply_markup=kb.cancelKeyboard
         )
         await botStages.UserRegistrationScreenplay.promo.set()
     elif purchase_location == 'Маркетплейс':
@@ -119,7 +120,7 @@ async def add_purchase_location(message: types.Message, state: FSMContext):
                     f'📎Прикрепите здесь 2 скрина:\n'
                     f'чек об оплате с маркетплейса и отзыв с артикулом товара, '
                     f'воспользовавшись скрепкой около клавиатуры.',
-            reply_markup=ReplyKeyboardRemove()
+            reply_markup=kb.cancelKeyboard
         )
         await botStages.UserRegistrationScreenplay.photo_upload.set()
 
@@ -136,19 +137,22 @@ async def add_promo(message: types.Message, state: FSMContext):
         else:
             await message.answer(
                 f'К сожалению, мы не нашли ваш промокод, либо он не соответствует времени действия промокода😭\n'
-                f'Попробуйте ещё раз или нажмите "Отмена"'
+                f'Попробуйте ещё раз или нажмите "Отмена"',
+                reply_markup=kb.cancelKeyboard
             )
     else:
         await message.answer(
             f'Кажется, вы ввели что-то не то 🤔\n'
-            f'Попробуйте ещё раз - одно слово без пробелов'
+            f'Попробуйте ещё раз - одно слово без пробелов',
+            reply_markup=kb.cancelKeyboard
         )
 
 
 async def processing_document_when_uploading_photo(message: types.Message):
     await message.reply(
         f'Пожалуйста, отправьте сжатое фото (поставьте или не убирайте галочку при загрузке на '
-        f'"Сжать изображение") 😶'
+        f'"Сжать изображение") 😶',
+        reply_markup=kb.cancelKeyboard
     )
 
 
@@ -160,7 +164,10 @@ async def add_photos(message: types.Message, state: FSMContext):
 
     # Проверяем наличие фото
     if not message.photo:
-        await message.answer("⚠ Пожалуйста, отправьте фотографию.")
+        await message.answer(
+            f'⚠ Пожалуйста, отправьте фотографию.',
+            reply_markup=kb.cancelKeyboard
+        )
         return
 
     file_id = message.photo[-1].file_id
@@ -232,7 +239,32 @@ async def add_lucky_ticket(message: types.Message, state: FSMContext):
     await advanced_stage(message)
 
 
+async def cancel_handler(message: types.Message, state: FSMContext):
+    await state.finish()
+    await message.answer(
+        f'Понял вас! Сбрасываю регистрацию',
+        reply_markup=ReplyKeyboardRemove()
+    )
+    await message.bot.send_photo(
+        message.chat.id,
+        photo=InputFile('photos/registration.jpg'),
+        caption=(
+            f'💖💖 КАК ПОЛУЧИТЬ ПОДАРОК\?\n'
+            f'Все очень просто:\n\n'
+            f'\_ Оставить отзыв о продукте YARKOST на сайте маркетплейса\.\n\n'
+            f'\*каждому участнику гарантированный подарок\! Победителей главных призов определим в @yarkostorganic в прямом эфире\.\n\n'
+            f'{utils.conditionsLink} /\n'
+            f'{utils.supportLink}\n\n'
+            f'Жмите кнопку УЧАСТВУЮ⬇'
+        ),
+        parse_mode=types.ParseMode.MARKDOWN_V2,
+        reply_markup=kb.playerInline
+    )
+
+
 def register_registration_handlers(dp: Dispatcher):
+    dp.register_message_handler(cancel_handler, state=botStages.UserRegistrationScreenplay.states,
+                                content_types=types.ContentType.TEXT, text=['Отмена'])
     dp.register_callback_query_handler(play, lambda c: c.data == 'play')
     dp.register_message_handler(add_nickname, state=botStages.UserRegistrationScreenplay.fio,
                                 content_types=types.ContentType.TEXT)

@@ -53,7 +53,7 @@ async def promo_add(message: types.Message):
         f'promo: (указать код БЕЗ пробелов!)\n'
         f'start: (дата начала в формате YYYY-MM-DD)\n'
         f'end: (дата окончания в формате YYYY-MM-DD)',
-        reply_markup=kb.cancelKeyboard
+        reply_markup=kb.backwardKeyboard
     )
 
 
@@ -123,7 +123,7 @@ async def promo_change(message: types.Message):
         f'promo: (указать код БЕЗ пробелов!)\n'
         f'start: (дата начала в формате YYYY-MM-DD)\n'
         f'end: (дата окончания в формате YYYY-MM-DD)',
-        reply_markup=kb.cancelKeyboard
+        reply_markup=kb.backwardKeyboard
     )
 
 

@@ -59,7 +59,7 @@ async def additional_purchase_location(message: types.Message, state: FSMContext
         await message.answer(
             f'Введите, пожалуйста, промокод 💗\n'
             f'Это должно быть одно слово без пробелов!!',
-            reply_markup=ReplyKeyboardRemove()
+            reply_markup=kb.cancelKeyboard
         )
         await botStages.UserAdvancedScreenplay.advanced_promo.set()
     elif purchase_location == 'Маркетплейс':
@@ -70,7 +70,7 @@ async def additional_purchase_location(message: types.Message, state: FSMContext
                     f'📎Прикрепите здесь 2 скрина:\n'
                     f'чек об оплате с маркетплейса и отзыв с артикулом товара, '
                     f'воспользовавшись скрепкой около клавиатуры.',
-            reply_markup=ReplyKeyboardRemove()
+            reply_markup=kb.cancelKeyboard
         )
         await botStages.UserAdvancedScreenplay.advanced_photo_upload.set()
         shared_data['photos'] = []
@@ -88,19 +88,22 @@ async def additional_promo(message: types.Message, state: FSMContext):
         else:
             await message.answer(
                 f'К сожалению, мы не нашли ваш промокод, либо он не соответствует времени действия промокода😭\n'
-                f'Попробуйте ещё раз или нажмите "Отмена"'
+                f'Попробуйте ещё раз или нажмите "Отмена"',
+                reply_markup=kb.cancelKeyboard
             )
     else:
         await message.answer(
             f'Кажется, вы ввели что-то не то 🤔\n'
-            f'Попробуйте ещё раз - одно слово без пробелов'
+            f'Попробуйте ещё раз - одно слово без пробелов',
+            reply_markup=kb.cancelKeyboard
         )
 
 
 async def processing_document_when_uploading_photo(message: types.Message):
     await message.reply(
         f'Пожалуйста, отправьте сжатое фото (поставьте или не убирайте галочку при загрузке на '
-        f'"Сжать изображение") 😶'
+        f'"Сжать изображение") 😶',
+        reply_markup=kb.cancelKeyboard
     )
 
 
@@ -202,7 +205,19 @@ async def advanced_stage(message: types.Message):
     )
 
 
+async def cancel_handler(message: types.Message, state: FSMContext):
+    await state.finish()
+    await message.answer(
+        f'Понял вас! Возвращаемся к основному меню',
+        reply_markup=ReplyKeyboardRemove()
+    )
+    await botStages.UserAdvancedScreenplay.advanced.set()
+    await advanced_stage(message)
+
+
 def register_advanced_handlers(dp: Dispatcher):
+    dp.register_message_handler(cancel_handler, state=botStages.UserAdvancedScreenplay.states,
+                                content_types=types.ContentType.TEXT, text=['Отмена'])
     dp.register_message_handler(personal_account, state=botStages.UserAdvancedScreenplay.advanced,
                                 content_types=types.ContentType.TEXT,
                                 text=['Личный кабинет'])
