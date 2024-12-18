@@ -217,7 +217,7 @@ async def add_lucky_ticket(message: types.Message, state: FSMContext):
         data['lucky_ticket'] = random_string
     if data.get('promo'):
         await db.registration_with_promo(pool, state, message.from_user.id)
-    elif len(shared_data) > 0:
+    else:
         await db.registration_with_photos(pool, state, shared_data, message.from_user.id)
     await state.finish()
     await message.answer(
