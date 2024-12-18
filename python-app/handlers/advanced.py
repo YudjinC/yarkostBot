@@ -128,24 +128,23 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
     """
     Добавляет фото в очередь, проверяет лимит и выполняет финализацию.
     """
-    # Проверяем лимит
-    if len(shared_data['photos']) >= MAX_PHOTOS:
-        logging.warning(f"Лимит фото достигнут. Игнорируем фото: {file_id}")
-        return
+    async with state.proxy() as data:
+        photos = data.get("photos", [])  # Получаем текущий список фотографий
+        if len(photos) >= MAX_PHOTOS:
+            logging.warning(f"Лимит фото достигнут. Игнорируем фото: {file_id}")
+            return
 
-    # Добавляем фото и сохраняем
-    logging.info(f"Добавляем фото: {file_id}")
-    photo_url = await save_photo_to_storage(file_id, message)
-    shared_data['photos'].append(photo_url)
+        logging.info(f"Добавляем фото: {file_id}")
+        photo_url = await save_photo_to_storage(file_id, message)
+        photos.append(photo_url)
+        data["photos"] = photos  # Сохраняем обновлённый список в FSM
 
-    current_state = await state.get_state()
-    if (len(shared_data['photos']) == 1) and (
-            current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload.state):
-        await message.answer("✅ Поздравляю, первая фотография сохранена!")
-    elif (len(shared_data['photos']) == MAX_PHOTOS) and (
-            current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload.state):
-        await message.answer("✅ Поздравляю, ваша вторая фотография сохранена!")
-        await finalize_photos(message, state)
+        current_state = await state.get_state()
+        if len(photos) == 1 and current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload.state:
+            await message.answer("✅ Поздравляю, первая фотография сохранена!")
+        elif len(photos) == MAX_PHOTOS and current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload.state:
+            await message.answer("✅ Поздравляю, ваша вторая фотография сохранена!")
+            await finalize_photos(message, state)
 
 
 async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
@@ -176,7 +175,7 @@ async def additional_lucky_ticket(message: types.Message, state: FSMContext):
     if data.get('promo'):
         await db.additional_with_promo(pool, state, message.from_user.id)
     else:
-        await db.additional_with_photos(pool, state, shared_data, message.from_user.id)
+        await db.additional_with_photos(pool, state, message.from_user.id)
     await state.finish()
     await message.answer(
         f'Начинаю проверку, секундочку...'
@@ -217,7 +216,7 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 
 def register_advanced_handlers(dp: Dispatcher):
     dp.register_message_handler(cancel_handler,
-                                state=[state for state in botStages.UserAdvancedScreenplay.states if state != botStages.UserAdvancedScreenplay.advanced_photo_upload],
+                                state=botStages.UserAdvancedScreenplay.states,
                                 content_types=types.ContentType.TEXT, text=['Отмена'])
     dp.register_message_handler(personal_account, state=botStages.UserAdvancedScreenplay.advanced,
                                 content_types=types.ContentType.TEXT,

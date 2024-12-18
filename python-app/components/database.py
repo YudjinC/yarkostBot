@@ -137,7 +137,7 @@ async def registration_with_promo(pool, state, user_id):
             )
 
 
-async def additional_with_photos(pool, state, shared_data, user_id):
+async def additional_with_photos(pool, state, user_id):
     async with pool.acquire() as conn:
         async with state.proxy() as data:
             await conn.execute(
@@ -149,7 +149,7 @@ async def additional_with_photos(pool, state, shared_data, user_id):
                 WHERE tg_id = $4
                 """,
                 [data['product']],
-                shared_data['photos'],
+                data['photos'],
                 [data['lucky_ticket']],
                 user_id
             )
