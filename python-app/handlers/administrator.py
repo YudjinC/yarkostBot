@@ -41,11 +41,16 @@ async def upload_users_db_with_promo(message: types.Message):
         )
         return
     else:
+        await message.answer(
+            f'Начинаю выгрузку БД',
+            reply_markup=ReplyKeyboardRemove()
+        )
         await db.upload_users_database_with_promo(pool, message.bot, message.chat.id, promo_code)
+        await botStages.AdminScreenPlay.admin_start.set()
 
 
 async def upload_users_db_with_promo_cancel(message: types.Message):
-    await botStages.AdminScreenPlay.admin_promo.set()
+    await botStages.AdminScreenPlay.admin_start.set()
     await message.answer(
         f'Возвращаемся к основной панели.',
         reply_markup=kb.promoKeyboardAdmin
