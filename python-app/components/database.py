@@ -154,19 +154,17 @@ async def additional_with_promo(pool, state, user_id):
 
 async def check_advanced_state(pool, user_id):
     async with pool.acquire() as conn:
-        result = await conn.fetchrow(
+        exists = await conn.fetchval(
             """
-            SELECT lucky_ticket
-            FROM users
-            WHERE tg_id = $1
+            SELECT EXISTS(
+                SELECT 1
+                FROM users
+                WHERE tg_id = $1
+            )
             """,
             user_id
         )
-        if result:
-            lucky_ticket = result["lucky_ticket"]
-            if isinstance(lucky_ticket, list) and any(ticket is not None for ticket in lucky_ticket):
-                return True
-        return False
+        return exists
 
 
 async def personal_account(pool, user_id):
