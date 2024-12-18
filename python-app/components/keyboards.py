@@ -18,7 +18,7 @@ productKeyboard.add('Сыворотка').add('Шампунь').add('Спрей-
 
 # choice purchase location
 purchaseLocationKeyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-productKeyboard.add('Маркет').add('Маркетплейс')
+purchaseLocationKeyboard.add('Маркет').add('Маркетплейс')
 
 # advertising buttons
 marketsInline = InlineKeyboardMarkup(row_width=3)
