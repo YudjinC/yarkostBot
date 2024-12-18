@@ -215,7 +215,7 @@ async def add_lucky_ticket(message: types.Message, state: FSMContext):
     pool = await message.bot.get('pg_pool')
     async with state.proxy() as data:
         data['lucky_ticket'] = random_string
-    if data['promo']:
+    if data.get['promo']:
         await db.registration_with_promo(pool, state, message.from_user.id)
     elif len(shared_data) > 0:
         await db.registration_with_photos(pool, state, shared_data, message.from_user.id)
