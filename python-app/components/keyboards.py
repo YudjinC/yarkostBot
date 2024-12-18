@@ -16,6 +16,10 @@ shareContactKeyboard.add(contactButtonInline)
 productKeyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 productKeyboard.add('Сыворотка').add('Шампунь').add('Спрей-гидролат').add('Мыло').add('Масло-суфле')
 
+# choice purchase location
+purchaseLocationKeyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+productKeyboard.add('Маркет').add('Маркетплейс')
+
 # advertising buttons
 marketsInline = InlineKeyboardMarkup(row_width=3)
 marketsInline.add(

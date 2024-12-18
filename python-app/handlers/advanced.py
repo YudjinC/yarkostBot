@@ -124,7 +124,7 @@ async def additional_lucky_ticket(message: types.Message, state: FSMContext):
     random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
     async with state.proxy() as data:
         data['lucky_ticket'] = random_string
-    await db.additional_item(pool, state, shared_data, message.from_user.id)
+    await db.additional_with_photos(pool, state, shared_data, message.from_user.id)
     await state.finish()
     await message.answer(
         f'Начинаю проверку, секундочку...'
