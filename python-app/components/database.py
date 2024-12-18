@@ -140,6 +140,7 @@ async def registration_with_promo(pool, state, user_id):
 async def additional_with_photos(pool, state, user_id):
     async with pool.acquire() as conn:
         async with state.proxy() as data:
+            all_photos = data.get('photos1', []) + data.get('photos2', [])
             await conn.execute(
                 """
                 UPDATE users
@@ -149,7 +150,7 @@ async def additional_with_photos(pool, state, user_id):
                 WHERE tg_id = $4
                 """,
                 [data['product']],
-                data['photos'],
+                all_photos,
                 [data['lucky_ticket']],
                 user_id
             )

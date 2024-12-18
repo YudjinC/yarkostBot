@@ -18,6 +18,8 @@ class UserAdvancedScreenplay(StatesGroup):
     advanced_purchase_location = State()
     advanced_promo = State()
     advanced_photo_upload = State()
+    advanced_photo_upload1 = State()
+    advanced_photo_upload2 = State()
 
 
 class AdminScreenPlay(StatesGroup):

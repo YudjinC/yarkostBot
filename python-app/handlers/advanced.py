@@ -17,8 +17,7 @@ import re
 
 PROMO_PATTERN = r'^[a-zA-Zа-яА-Я0-9]+$'
 
-MAX_PHOTOS = 2
-shared_data = {"photos": []}
+MAX_PHOTOS = 1
 state_lock = asyncio.Lock()
 
 
@@ -66,14 +65,11 @@ async def additional_purchase_location(message: types.Message, state: FSMContext
         await message.bot.send_photo(
             message.chat.id,
             photo=InputFile('photos/marketplaces.jpg'),
-            caption=f'💖 Оставьте честный отзыв о спрей-гидролат от YARKOST\n'
-                    f'📎Прикрепите здесь 2 скрина:\n'
-                    f'чек об оплате с маркетплейса и отзыв с артикулом товара, '
+            caption=f'📎Прикрепите чек об облате с маркетплейса, '
                     f'воспользовавшись скрепкой около клавиатуры.',
             reply_markup=kb.cancelKeyboard
         )
         await botStages.UserAdvancedScreenplay.advanced_photo_upload.set()
-        shared_data['photos'] = []
 
 
 async def additional_promo(message: types.Message, state: FSMContext):
@@ -107,7 +103,7 @@ async def processing_document_when_uploading_photo(message: types.Message):
     )
 
 
-async def additional_photo(message: types.Message, state: FSMContext):
+async def additional_photo1(message: types.Message, state: FSMContext):
     """
     Обработчик фотографий: вызывает добавление фото через очередь задач.
     """
@@ -121,15 +117,15 @@ async def additional_photo(message: types.Message, state: FSMContext):
     file_id = message.photo[-1].file_id
 
     async with state_lock:  # Блокируем доступ к добавлению фото
-        await add_photo_to_queue(file_id, message, state)
+        await add_photo_to_queue1(file_id, message, state)
 
 
-async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMContext):
+async def add_photo_to_queue1(file_id: str, message: types.Message, state: FSMContext):
     """
     Добавляет фото в очередь, проверяет лимит и выполняет финализацию.
     """
     async with state.proxy() as data:
-        photos = data.get("photos", [])  # Получаем текущий список фотографий
+        photos = data.get("photos1", [])  # Получаем текущий список фотографий
         if len(photos) >= MAX_PHOTOS:
             logging.warning(f"Лимит фото достигнут. Игнорируем фото: {file_id}")
             return
@@ -137,14 +133,74 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
         logging.info(f"Добавляем фото: {file_id}")
         photo_url = await save_photo_to_storage(file_id, message)
         photos.append(photo_url)
-        data["photos"] = photos  # Сохраняем обновлённый список в FSM
+        data["photos1"] = photos  # Сохраняем обновлённый список в FSM
 
         current_state = await state.get_state()
-        if len(photos) == 1 and current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload.state:
-            await message.answer("✅ Поздравляю, первая фотография сохранена!")
-        elif len(photos) == MAX_PHOTOS and current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload.state:
+        if len(photos) == MAX_PHOTOS and current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload1.state:
             await message.answer("✅ Поздравляю, ваша вторая фотография сохранена!")
-            await finalize_photos(message, state)
+            await finalize_photos1(message, state)
+
+
+async def finalize_photos1(message: types.Message, state: FSMContext):
+    """
+    Завершает обработку после сохранения двух фото.
+    """
+    async with state.proxy() as data:
+        await message.answer("🎉 Спасибо! Первая фотография сохранена.")
+        logging.info(f"Финализированные фото: {data['photos1']}")
+        await message.answer(
+            f'💖 Оставьте честный отзыв о продукте от YARKOST\n'
+            f'Прикрепите скриншот!!'
+        )
+        await botStages.UserAdvancedScreenplay.advanced_photo_upload2
+
+
+async def additional_photo2(message: types.Message, state: FSMContext):
+    """
+    Обработчик фотографий: вызывает добавление фото через очередь задач.
+    """
+    logging.info(f"Получено сообщение: {message}")
+
+    # Проверяем наличие фото
+    if not message.photo:
+        await message.answer("⚠ Пожалуйста, отправьте фотографию.")
+        return
+
+    file_id = message.photo[-1].file_id
+
+    async with state_lock:  # Блокируем доступ к добавлению фото
+        await add_photo_to_queue1(file_id, message, state)
+
+
+async def add_photo_to_queue2(file_id: str, message: types.Message, state: FSMContext):
+    """
+    Добавляет фото в очередь, проверяет лимит и выполняет финализацию.
+    """
+    async with state.proxy() as data:
+        photos = data.get("photos2", [])  # Получаем текущий список фотографий
+        if len(photos) >= MAX_PHOTOS:
+            logging.warning(f"Лимит фото достигнут. Игнорируем фото: {file_id}")
+            return
+
+        logging.info(f"Добавляем фото: {file_id}")
+        photo_url = await save_photo_to_storage(file_id, message)
+        photos.append(photo_url)
+        data["photos2"] = photos  # Сохраняем обновлённый список в FSM
+
+        current_state = await state.get_state()
+        if len(photos) == MAX_PHOTOS and current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload1.state:
+            await message.answer("✅ Поздравляю, ваша вторая фотография сохранена!")
+            await finalize_photos1(message, state)
+
+
+async def finalize_photos2(message: types.Message, state: FSMContext):
+    """
+    Завершает обработку после сохранения двух фото.
+    """
+    async with state.proxy() as data:
+        await message.answer("🎉 Спасибо! Вторая фотография сохранена.")
+        logging.info(f"Финализированные фото: {data['photos2']}")
+        await additional_lucky_ticket(message, state)
 
 
 async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
@@ -156,15 +212,6 @@ async def save_photo_to_storage(file_id: str, message: types.Message) -> str:
     photo_url = await s3.save_photo_to_minio(message.bot, file_id, filename, message.from_user.id)
     logging.info(f"Фото сохранено на сервере: {photo_url}")
     return photo_url
-
-
-async def finalize_photos(message: types.Message, state: FSMContext):
-    """
-    Завершает обработку после сохранения двух фото.
-    """
-    await message.answer("🎉 Спасибо! Обе фотографии загружены и сохранены.")
-    logging.info(f"Финализированные фото: {shared_data['photos']}")
-    await additional_lucky_ticket(message, state)
 
 
 async def additional_lucky_ticket(message: types.Message, state: FSMContext):
@@ -234,6 +281,8 @@ def register_advanced_handlers(dp: Dispatcher):
     dp.register_message_handler(processing_document_when_uploading_photo,
                                 state=botStages.UserAdvancedScreenplay.advanced_photo_upload,
                                 content_types=types.ContentType.DOCUMENT)
-    dp.register_message_handler(additional_photo, state=botStages.UserAdvancedScreenplay.advanced_photo_upload,
+    dp.register_message_handler(additional_photo1, state=botStages.UserAdvancedScreenplay.advanced_photo_upload,
+                                content_types=types.ContentType.PHOTO)
+    dp.register_message_handler(additional_photo2, state=botStages.UserAdvancedScreenplay.advanced_photo_upload,
                                 content_types=types.ContentType.PHOTO)
     dp.register_message_handler(advanced_stage, state=botStages.UserAdvancedScreenplay.advanced)
