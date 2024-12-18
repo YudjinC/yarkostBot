@@ -10,4 +10,4 @@ async def fallback_message_handler(message: types.Message):
 
 
 def register_fallback_handlers(dp: Dispatcher):
-    dp.register_message_handler(fallback_message_handler, content_types=types.ContentType.ANY)
+    dp.register_message_handler(fallback_message_handler, state="*", content_types=types.ContentType.ANY)
