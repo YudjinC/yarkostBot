@@ -52,7 +52,7 @@ async def upload_users_db_with_promo(message: types.Message):
 async def upload_users_db_with_promo_cancel(message: types.Message):
     await message.answer(
         f'Возвращаемся к основной панели.',
-        reply_markup=kb.promoKeyboardAdmin
+        reply_markup=kb.mainKeyboardAdmin
     )
     await botStages.AdminScreenPlay.admin_start.set()
 
@@ -252,7 +252,8 @@ def register_administrator_handlers(dp: Dispatcher):
                                 text=['Выгрузить базу данных пользователей'])
     dp.register_message_handler(input_promo_for_upload, state=botStages.AdminScreenPlay.admin_start,
                                 text=['Выгрузить по промокоду'])
-    dp.register_message_handler(upload_users_db_with_promo_cancel, state=botStages.AdminScreenPlay.admin_upload_with_promo,
+    dp.register_message_handler(upload_users_db_with_promo_cancel,
+                                state=botStages.AdminScreenPlay.admin_upload_with_promo,
                                 text=['Назад'])
     dp.register_message_handler(upload_users_db_with_promo, state=botStages.AdminScreenPlay.admin_upload_with_promo)
     dp.register_message_handler(promo_codes, state=botStages.AdminScreenPlay.admin_start, text=['Промокоды'])
