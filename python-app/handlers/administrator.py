@@ -1,18 +1,12 @@
 from aiogram import types, Dispatcher
-from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
 
 from components import database as db
 from components import keyboards as kb
 from modules import botStages
 
-from dotenv import load_dotenv
 from datetime import datetime
-import os
 import re
-
-load_dotenv()
-admin = int(os.getenv('ADMIN_ID'))
 
 
 async def upload_users_db(message: types.Message):
