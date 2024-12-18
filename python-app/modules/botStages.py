@@ -25,3 +25,4 @@ class AdminScreenPlay(StatesGroup):
     admin_promo = State()
     admin_promo_add = State()
     admin_promo_change = State()
+    admin_upload_with_promo = State()

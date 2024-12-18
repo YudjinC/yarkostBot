@@ -23,12 +23,33 @@ async def upload_users_db(message: types.Message):
     await db.upload_users_database(pool, message.bot, message.chat.id)
 
 
+async def input_promo_for_upload(message: types.Message):
+    await message.answer(
+        f'Введите промокод.',
+        reply_markup=kb.backwardKeyboard
+    )
+    await botStages.AdminScreenPlay.admin_upload_with_promo.set()
+
+
 async def upload_users_db_with_promo(message: types.Message):
     pool = await message.bot.get('pg_pool')
+    promo_code = message.text
+    exist = await db.select_one_promo(pool, promo_code)
+    if not exist:
+        await message.answer(
+            f'Промокод с названием "{promo_code}" не найден! Убедитесь, что вы указали верный код.'
+        )
+        return
+    else:
+        await db.upload_users_database_with_promo(pool, message.bot, message.chat.id, promo_code)
+
+
+async def upload_users_db_with_promo_cancel(message: types.Message):
+    await botStages.AdminScreenPlay.admin_promo.set()
     await message.answer(
-        f'Начинаю выгрузку БД, дождитесь сообщения!'
+        f'Возвращаемся к основной панели.',
+        reply_markup=kb.promoKeyboardAdmin
     )
-    await db.upload_users_database_with_promo(pool, message.bot, message.chat.id)
 
 
 async def promo_codes(message: types.Message):
@@ -224,8 +245,11 @@ async def admin_play(message: types.Message):
 def register_administrator_handlers(dp: Dispatcher):
     dp.register_message_handler(upload_users_db, state=botStages.AdminScreenPlay.admin_start,
                                 text=['Выгрузить базу данных пользователей'])
-    dp.register_message_handler(upload_users_db_with_promo, state=botStages.AdminScreenPlay.admin_start,
+    dp.register_message_handler(input_promo_for_upload, state=botStages.AdminScreenPlay.admin_start,
                                 text=['Выгрузить по промокоду'])
+    dp.register_message_handler(upload_users_db_with_promo_cancel, state=botStages.AdminScreenPlay.admin_upload_with_promo,
+                                text=['Назад'])
+    dp.register_message_handler(upload_users_db_with_promo, state=botStages.AdminScreenPlay.admin_upload_with_promo)
     dp.register_message_handler(promo_codes, state=botStages.AdminScreenPlay.admin_start, text=['Промокоды'])
     dp.register_message_handler(promo_select, state=botStages.AdminScreenPlay.admin_promo,
                                 text=['Вывести список промокодов'])
