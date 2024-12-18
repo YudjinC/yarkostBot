@@ -33,10 +33,10 @@ async def db_start(pool):
                 contact TEXT,
                 email TEXT,
                 birthday TEXT,
-                product TEXT[],
-                promo TEXT[],
+                product,
+                promo,
                 photo TEXT[],
-                lucky_ticket TEXT[]
+                lucky_ticket
             )
             """
         )
@@ -62,11 +62,11 @@ async def db_start(pool):
         )
 
 
-async def cmd_start_db(pool, user_id):
-    async with pool.acquire() as conn:
-        user = await conn.fetchrow("SELECT * FROM users WHERE tg_id = $1", user_id)
-        if not user:
-            await conn.execute("INSERT INTO users (tg_id) VALUES ($1)", user_id)
+# async def cmd_start_db(pool, user_id):
+#     async with pool.acquire() as conn:
+#         user = await conn.fetchrow("SELECT * FROM users WHERE tg_id = $1", user_id)
+#         if not user:
+#             await conn.execute("INSERT INTO users (tg_id) VALUES ($1)", user_id)
 
 
 async def is_admin_user(pool, tg_id):
@@ -90,24 +90,17 @@ async def registration_with_photos(pool, state, shared_data, user_id):
         async with state.proxy() as data:
             await conn.execute(
                 """
-                UPDATE users
-                SET fio = $1,
-                    contact = $2,
-                    email = $3,
-                    birthday = $4,
-                    product = COALESCE(product, ARRAY[]::TEXT[]) || $5,
-                    photo = COALESCE(photo, ARRAY[]::TEXT[]) || $6,
-                    lucky_ticket = COALESCE(lucky_ticket, ARRAY[]::TEXT[]) || $7
-                WHERE tg_id = $8
+                INSERT INTO users (tg_id, fio, contact, email, birthday, product, photo, lucky_ticket)
+                VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, ARRAY[]::TEXT[]), $8);
                 """,
+                user_id,
                 data['fio'],
                 data['contact'],
                 data['email'],
                 data['birthday'],
-                [data['product']],
+                data['product'],
                 shared_data['photos'],
-                [data['lucky_ticket']],
-                user_id
+                data['lucky_ticket']
             )
 
 
@@ -116,24 +109,17 @@ async def registration_with_promo(pool, state, user_id):
         async with state.proxy() as data:
             await conn.execute(
                 """
-                UPDATE users
-                SET fio = $1,
-                    contact = $2,
-                    email = $3,
-                    birthday = $4,
-                    product = COALESCE(product, ARRAY[]::TEXT[]) || $5,
-                    promo = COALESCE(promo, ARRAY[]::TEXT[]) || $6,
-                    lucky_ticket = COALESCE(lucky_ticket, ARRAY[]::TEXT[]) || $7
-                WHERE tg_id = $8
+                INSERT INTO users (tg_id, fio, contact, email, birthday, product, promo, lucky_ticket)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
                 """,
+                user_id,
                 data['fio'],
                 data['contact'],
                 data['email'],
                 data['birthday'],
-                [data['product']],
-                [data['promo']],
-                [data['lucky_ticket']],
-                user_id
+                data['product'],
+                data['promo'],
+                data['lucky_ticket']
             )
 
 

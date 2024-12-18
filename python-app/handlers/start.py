@@ -15,7 +15,7 @@ async def cmd_start(message: types.Message):
         await botStages.AdminScreenPlay.admin_start.set()
         await admin_play(message)
     else:
-        await db.cmd_start_db(pool, message.from_user.id)
+        # await db.cmd_start_db(pool, message.from_user.id)
         advanced = await db.check_advanced_state(pool, message.from_user.id)
         if advanced:
             await botStages.UserAdvancedScreenplay.advanced.set()

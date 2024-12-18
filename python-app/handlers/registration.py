@@ -23,8 +23,10 @@ shared_data = {"photos": []}
 state_lock = asyncio.Lock()
 
 
-async def play(callback_query: types.CallbackQuery):
+async def play(callback_query: types.CallbackQuery, message: types.Message, state: FSMContext):
     if callback_query.data == 'play':
+        async with state.proxy() as data:
+            data['tg_id'] = message.from_user.id
         await botStages.UserRegistrationScreenplay.fio.set()
         await callback_query.bot.send_message(
             chat_id=callback_query.from_user.id,
@@ -252,7 +254,8 @@ async def cancel_handler(message: types.Message, state: FSMContext):
             f'💖💖 КАК ПОЛУЧИТЬ ПОДАРОК\?\n'
             f'Все очень просто:\n\n'
             f'\_ Оставить отзыв о продукте YARKOST на сайте маркетплейса\.\n\n'
-            f'\*каждому участнику гарантированный подарок\! Победителей главных призов определим в @yarkostorganic в прямом эфире\.\n\n'
+            f'\*каждому участнику гарантированный подарок\! Победителей главных призов определим в '
+            f'@yarkostorganic в прямом эфире\.\n\n'
             f'{utils.conditionsLink} /\n'
             f'{utils.supportLink}\n\n'
             f'Жмите кнопку УЧАСТВУЮ⬇'
