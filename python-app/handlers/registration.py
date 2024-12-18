@@ -16,6 +16,7 @@ import string
 import re
 
 EMAIL_REGEX = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+PROMO_PATTERN = r'^[a-zA-Zа-яА-Я0-9]+$'
 
 MAX_PHOTOS = 2
 shared_data = {"photos": []}
@@ -92,15 +93,56 @@ async def add_birthday(message: types.Message, state: FSMContext):
 async def add_product(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['product'] = message.text
-    await message.bot.send_photo(
-        message.chat.id,
-        photo=InputFile('photos/marketplaces.jpg'),
-        caption=f'💖 Оставьте честный отзыв о спрей-гидролат от YARKOST\n'
-                f'📎Прикрепите здесь 2 скрина:\n'
-                f'чек об оплате с маркетплейса и отзыв с артикулом товара, воспользовавшись скрепкой около клавиатуры.',
-        reply_markup=ReplyKeyboardRemove()
+    await message.answer(
+        f'Покупали на маркетплейсе или на маркет?',
+        reply_markup=kb.purchaseLocationKeyboard
     )
     await botStages.UserRegistrationScreenplay.next()
+
+
+async def add_purchase_location(message: types.Message, state: FSMContext):
+    purchase_location = message.text
+    async with state.proxy() as data:
+        data['purchase_location'] = purchase_location
+    if purchase_location == 'Маркет':
+        await message.answer(
+            f'Введите, пожалуйста, промокод 💗\n'
+            f'Это должно быть одно слово без пробелов!!',
+            reply_markup=ReplyKeyboardRemove()
+        )
+        await botStages.UserRegistrationScreenplay.promo.set()
+    elif purchase_location == 'Маркетплейс':
+        await message.bot.send_photo(
+            message.chat.id,
+            photo=InputFile('photos/marketplaces.jpg'),
+            caption=f'💖 Оставьте честный отзыв о спрей-гидролат от YARKOST\n'
+                    f'📎Прикрепите здесь 2 скрина:\n'
+                    f'чек об оплате с маркетплейса и отзыв с артикулом товара, '
+                    f'воспользовавшись скрепкой около клавиатуры.',
+            reply_markup=ReplyKeyboardRemove()
+        )
+        await botStages.UserRegistrationScreenplay.photo_upload.set()
+
+
+async def add_promo(message: types.Message, state: FSMContext):
+    promo = message.text.strip()
+    if re.match(PROMO_PATTERN, promo):
+        pool = await message.bot.get('pg_pool')
+        result = await db.check_user_promo(pool, promo)
+        if result:
+            async with state.proxy() as data:
+                data['promo'] = promo
+            await add_lucky_ticket(message, state)
+        else:
+            await message.answer(
+                f'К сожалению, мы не нашли ваш промокод, либо он не соответствует времени действия промокода😭\n'
+                f'Попробуйте ещё раз или нажмите "Отмена"'
+            )
+    else:
+        await message.answer(
+            f'Кажется, вы ввели что-то не то 🤔\n'
+            f'Попробуйте ещё раз - одно слово без пробелов'
+        )
 
 
 async def processing_document_when_uploading_photo(message: types.Message):
@@ -171,31 +213,42 @@ async def finalize_photos(message: types.Message, state: FSMContext):
 
 async def add_lucky_ticket(message: types.Message, state: FSMContext):
     pool = await message.bot.get('pg_pool')
+    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+    async with state.proxy() as data:
+        data['lucky_ticket'] = random_string
+    if data.get('promo'):
+        await db.registration_with_promo(pool, state, message.from_user.id)
+    else:
+        await db.registration_with_photos(pool, state, shared_data, message.from_user.id)
+    await state.finish()
     await message.answer(
         f'Начинаю проверку, секундочку...'
     )
-    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
     await message.answer(
         f'Поздравляю, ваш отзыв зарегистрирован!\n'
         f'Номер вашего счастливого купона: {random_string}'
     )
-    async with state.proxy() as data:
-        data['lucky_ticket'] = random_string
-    await db.add_item(pool, state, shared_data, message.from_user.id)
-    await state.finish()
     await botStages.UserAdvancedScreenplay.advanced.set()
     await advanced_stage(message)
 
 
 def register_registration_handlers(dp: Dispatcher):
     dp.register_callback_query_handler(play, lambda c: c.data == 'play')
-    dp.register_message_handler(add_nickname, state=botStages.UserRegistrationScreenplay.fio)
+    dp.register_message_handler(add_nickname, state=botStages.UserRegistrationScreenplay.fio,
+                                content_types=types.ContentType.TEXT)
     dp.register_message_handler(add_contact, state=botStages.UserRegistrationScreenplay.contact,
                                 content_types=types.ContentType.CONTACT)
     dp.register_message_handler(contact_not_shared, state=botStages.UserRegistrationScreenplay.contact)
-    dp.register_message_handler(add_email, state=botStages.UserRegistrationScreenplay.email)
-    dp.register_message_handler(add_birthday, state=botStages.UserRegistrationScreenplay.birthday)
-    dp.register_message_handler(add_product, state=botStages.UserRegistrationScreenplay.product)
+    dp.register_message_handler(add_email, state=botStages.UserRegistrationScreenplay.email,
+                                content_types=types.ContentType.TEXT)
+    dp.register_message_handler(add_birthday, state=botStages.UserRegistrationScreenplay.birthday,
+                                content_types=types.ContentType.TEXT)
+    dp.register_message_handler(add_product, state=botStages.UserRegistrationScreenplay.product,
+                                content_types=types.ContentType.TEXT)
+    dp.register_message_handler(add_purchase_location, state=botStages.UserRegistrationScreenplay.purchase_location,
+                                content_types=types.ContentType.TEXT)
+    dp.register_message_handler(add_promo, state=botStages.UserRegistrationScreenplay.promo,
+                                content_types=types.ContentType.TEXT)
     dp.register_message_handler(processing_document_when_uploading_photo,
                                 state=botStages.UserRegistrationScreenplay.photo_upload,
                                 content_types=types.ContentType.DOCUMENT)

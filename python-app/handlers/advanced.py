@@ -13,6 +13,9 @@ from modules import botStages
 import logging
 import random
 import string
+import re
+
+PROMO_PATTERN = r'^[a-zA-Zа-яА-Я0-9]+$'
 
 MAX_PHOTOS = 2
 shared_data = {"photos": []}
@@ -41,16 +44,57 @@ async def additional_play(message: types.Message):
 async def additional_product(message: types.Message,  state: FSMContext):
     async with state.proxy() as data:
         data['product'] = message.text
-    await message.bot.send_photo(
-        message.chat.id,
-        photo=InputFile('photos/marketplaces.jpg'),
-        caption=f'💖 Оставьте честный отзыв о спрей-гидролат от YARKOST\n'
-                f'📎Прикрепите здесь 2 скрина:\n'
-                f'чек об оплате с маркетплейса и отзыв с артикулом товара, воспользовавшись скрепкой около клавиатуры.',
-        reply_markup=ReplyKeyboardRemove()
+    await message.answer(
+        f'Покупали на маркетплейсе или на маркет?',
+        reply_markup=kb.purchaseLocationKeyboard
     )
     await botStages.UserAdvancedScreenplay.next()
-    shared_data['photos'] = []
+
+
+async def additional_purchase_location(message: types.Message, state: FSMContext):
+    purchase_location = message.text
+    async with state.proxy() as data:
+        data['purchase_location'] = purchase_location
+    if purchase_location == 'Маркет':
+        await message.answer(
+            f'Введите, пожалуйста, промокод 💗\n'
+            f'Это должно быть одно слово без пробелов!!',
+            reply_markup=ReplyKeyboardRemove()
+        )
+        await botStages.UserAdvancedScreenplay.advanced_promo.set()
+    elif purchase_location == 'Маркетплейс':
+        await message.bot.send_photo(
+            message.chat.id,
+            photo=InputFile('photos/marketplaces.jpg'),
+            caption=f'💖 Оставьте честный отзыв о спрей-гидролат от YARKOST\n'
+                    f'📎Прикрепите здесь 2 скрина:\n'
+                    f'чек об оплате с маркетплейса и отзыв с артикулом товара, '
+                    f'воспользовавшись скрепкой около клавиатуры.',
+            reply_markup=ReplyKeyboardRemove()
+        )
+        await botStages.UserAdvancedScreenplay.advanced_photo_upload.set()
+        shared_data['photos'] = []
+
+
+async def additional_promo(message: types.Message, state: FSMContext):
+    promo = message.text.strip()
+    if re.match(PROMO_PATTERN, promo):
+        pool = await message.bot.get('pg_pool')
+        result = await db.check_user_promo(pool, promo)
+        if result:
+            async with state.proxy() as data:
+                data['promo'] = promo
+            await additional_lucky_ticket(message, state)
+        else:
+            await message.answer(
+                f'К сожалению, мы не нашли ваш промокод, либо он не соответствует времени действия промокода😭\n'
+                f'Попробуйте ещё раз или нажмите "Отмена"'
+            )
+    else:
+        await message.answer(
+            f'Кажется, вы ввели что-то не то 🤔\n'
+            f'Попробуйте ещё раз - одно слово без пробелов'
+        )
 
 
 async def processing_document_when_uploading_photo(message: types.Message):
@@ -92,9 +136,11 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
     shared_data['photos'].append(photo_url)
 
     current_state = await state.get_state()
-    if (len(shared_data['photos']) == 1) and (current_state == botStages.UserAdvancedScreenplay.advanced_photo.state):
+    if (len(shared_data['photos']) == 1) and (
+            current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload.state):
         await message.answer("✅ Поздравляю, первая фотография сохранена!")
-    elif (len(shared_data['photos']) == MAX_PHOTOS) and (current_state == botStages.UserAdvancedScreenplay.advanced_photo.state):
+    elif (len(shared_data['photos']) == MAX_PHOTOS) and (
+            current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload.state):
         await message.answer("✅ Поздравляю, ваша вторая фотография сохранена!")
         await finalize_photos(message, state)
 
@@ -124,7 +170,10 @@ async def additional_lucky_ticket(message: types.Message, state: FSMContext):
     random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
     async with state.proxy() as data:
         data['lucky_ticket'] = random_string
-    await db.additional_item(pool, state, shared_data, message.from_user.id)
+    if data.get('promo'):
+        await db.additional_with_promo(pool, state, message.from_user.id)
+    else:
+        await db.additional_with_photos(pool, state, shared_data, message.from_user.id)
     await state.finish()
     await message.answer(
         f'Начинаю проверку, секундочку...'
@@ -155,13 +204,21 @@ async def advanced_stage(message: types.Message):
 
 def register_advanced_handlers(dp: Dispatcher):
     dp.register_message_handler(personal_account, state=botStages.UserAdvancedScreenplay.advanced,
+                                content_types=types.ContentType.TEXT,
                                 text=['Личный кабинет'])
     dp.register_message_handler(additional_play, state=botStages.UserAdvancedScreenplay.advanced,
+                                content_types=types.ContentType.TEXT,
                                 text=['Дополнительный купон'])
-    dp.register_message_handler(additional_product, state=botStages.UserAdvancedScreenplay.advanced_product)
+    dp.register_message_handler(additional_product, state=botStages.UserAdvancedScreenplay.advanced_product,
+                                content_types=types.ContentType.TEXT)
+    dp.register_message_handler(additional_purchase_location,
+                                state=botStages.UserAdvancedScreenplay.advanced_purchase_location,
+                                content_types=types.ContentType.TEXT)
+    dp.register_message_handler(additional_promo, state=botStages.UserAdvancedScreenplay.advanced_promo,
+                                content_types=types.ContentType.TEXT)
     dp.register_message_handler(processing_document_when_uploading_photo,
-                                state=botStages.UserAdvancedScreenplay.advanced_photo,
+                                state=botStages.UserAdvancedScreenplay.advanced_photo_upload,
                                 content_types=types.ContentType.DOCUMENT)
-    dp.register_message_handler(additional_photo, state=botStages.UserAdvancedScreenplay.advanced_photo,
+    dp.register_message_handler(additional_photo, state=botStages.UserAdvancedScreenplay.advanced_photo_upload,
                                 content_types=types.ContentType.PHOTO)
     dp.register_message_handler(advanced_stage, state=botStages.UserAdvancedScreenplay.advanced)

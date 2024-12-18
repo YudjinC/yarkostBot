@@ -1,7 +1,6 @@
 import asyncpg
 
-from datetime import date
-import logging
+from datetime import datetime, date
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -31,6 +30,7 @@ async def db_start(pool):
                 email TEXT,
                 birthday TEXT,
                 product TEXT[],
+                promo TEXT[],
                 photo TEXT[],
                 lucky_ticket TEXT[]
             )
@@ -55,7 +55,7 @@ async def cmd_start_db(pool, user_id):
             await conn.execute("INSERT INTO users (tg_id) VALUES ($1)", user_id)
 
 
-async def add_item(pool, state, shared_data, user_id):
+async def registration_with_photos(pool, state, shared_data, user_id):
     async with pool.acquire() as conn:
         async with state.proxy() as data:
             await conn.execute(
@@ -81,7 +81,33 @@ async def add_item(pool, state, shared_data, user_id):
             )
 
 
-async def additional_item(pool, state, shared_data, user_id):
+async def registration_with_promo(pool, state, user_id):
+    async with pool.acquire() as conn:
+        async with state.proxy() as data:
+            await conn.execute(
+                """
+                UPDATE users
+                SET fio = $1,
+                    contact = $2,
+                    email = $3,
+                    birthday = $4,
+                    product = COALESCE(product, ARRAY[]::TEXT[]) || $5,
+                    promo = COALESCE(promo, ARRAY[]::TEXT[]) || $6,
+                    lucky_ticket = COALESCE(lucky_ticket, ARRAY[]::TEXT[]) || $7
+                WHERE tg_id = $8
+                """,
+                data['fio'],
+                data['contact'],
+                data['email'],
+                data['birthday'],
+                [data['product']],
+                [data['promo']],
+                [data['lucky_ticket']],
+                user_id
+            )
+
+
+async def additional_with_photos(pool, state, shared_data, user_id):
     async with pool.acquire() as conn:
         async with state.proxy() as data:
             await conn.execute(
@@ -99,21 +125,38 @@ async def additional_item(pool, state, shared_data, user_id):
             )
 
 
+async def additional_with_promo(pool, state, user_id):
+    async with pool.acquire() as conn:
+        async with state.proxy() as data:
+            await conn.execute(
+                """
+                UPDATE users
+                SET product = COALESCE(product, ARRAY[]::TEXT[]) || $1,
+                    promo = COALESCE(promo, ARRAY[]::TEXT[]) || $2,
+                    lucky_ticket = COALESCE(lucky_ticket, ARRAY[]::TEXT[]) || $3
+                WHERE tg_id = $4
+                """,
+                [data['product']],
+                [data['promo']],
+                [data['lucky_ticket']],
+                user_id
+            )
+
+
 async def check_advanced_state(pool, user_id):
     async with pool.acquire() as conn:
         result = await conn.fetchrow(
             """
-            SELECT fio, contact, email, birthday, product, photo, lucky_ticket
+            SELECT lucky_ticket
             FROM users
             WHERE tg_id = $1
             """,
             user_id
         )
         if result:
-            return all(
-                field and (not isinstance(field, list) or len(field) > 0)
-                for field in result
-            )
+            lucky_ticket = result["lucky_ticket"]
+            if isinstance(lucky_ticket, list) and any(ticket is not None for ticket in lucky_ticket):
+                return True
         return False
 
 
@@ -185,3 +228,20 @@ async def update_promo(pool, promo_code: str, start_date: date, end_date: date):
             end_date,
             promo_code
         )
+
+
+async def check_user_promo(pool, promo_code):
+    async with pool.acquire() as conn:
+        current_date = datetime.now().date()
+        result = await conn.fetchrow(
+            """
+            SELECT code, start_date, end_date 
+            FROM promo_codes
+            WHERE code = $1
+              AND start_date <= $2
+              AND end_date >= $2
+            """,
+            promo_code,
+            current_date
+        )
+    return result
