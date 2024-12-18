@@ -304,11 +304,30 @@ async def upload_users_database(pool, bot, admin_id):
                         row["contact"],
                         row["email"],
                         row["birthday"],
-                        ",".join(row["product"] or []),
-                        ",".join(row["promo"] or []),
-                        ",".join(row["photo"] or []),
-                        ",".join(row["lucky_ticket"] or []),
+                        None,
+                        None,
+                        None,
+                        None
                     ])
+                    if row["product"]:
+                        for product in row["product"]:
+                            writer.writerow([
+                                None, None, None, None, None, None, product, None, None, None
+                            ])
+                    if row["promo"]:
+                        for promo in row["promo"]:
+                            writer.writerow([
+                                None, None, None, None, None, None, None, promo, None, None
+                            ])
+                    if row["photo"]:
+                        for photo in row["photo"]:
+                            writer.writerow([
+                                None, None, None, None, None, None, None, None, photo, None
+                            ])
+                    if row["lucky_ticket"]:
+                        writer.writerow([
+                            None, None, None, None, None, None, None, None, None, row["lucky_ticket"]
+                        ])
 
         await bot.send_document(admin_id, InputFile(csv_file_path), caption="Экспорт пользователей из БД")
 
