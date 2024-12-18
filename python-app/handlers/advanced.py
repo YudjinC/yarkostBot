@@ -216,7 +216,8 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 
 
 def register_advanced_handlers(dp: Dispatcher):
-    dp.register_message_handler(cancel_handler, state=botStages.UserAdvancedScreenplay.states,
+    dp.register_message_handler(cancel_handler,
+                                state=[state for state in botStages.UserAdvancedScreenplay.states if state != botStages.UserAdvancedScreenplay.advanced_photo_upload],
                                 content_types=types.ContentType.TEXT, text=['Отмена'])
     dp.register_message_handler(personal_account, state=botStages.UserAdvancedScreenplay.advanced,
                                 content_types=types.ContentType.TEXT,
