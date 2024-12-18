@@ -2,7 +2,7 @@ import asyncio
 
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
-from aiogram.types import InputFile
+from aiogram.types import InputFile, ReplyKeyboardRemove
 
 from components import database as db
 from components import keyboards as kb
@@ -241,6 +241,10 @@ async def add_lucky_ticket(message: types.Message, state: FSMContext):
 
 async def cancel_handler(message: types.Message, state: FSMContext):
     await state.finish()
+    await message.answer(
+        f'Понял вас! Сбрасываю регистрацию',
+        reply_markup=ReplyKeyboardRemove()
+    )
     await message.bot.send_photo(
         message.chat.id,
         photo=InputFile('photos/registration.jpg'),
