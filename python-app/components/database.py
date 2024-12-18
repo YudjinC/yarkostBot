@@ -1,10 +1,14 @@
 import asyncpg
+from aiogram.types import InputFile
 
 from datetime import datetime, date
 from dotenv import load_dotenv
+import csv
 import os
-load_dotenv()
 
+TEMP_DIR = "/temp"
+
+load_dotenv()
 DB_CONFIG = {
     'user': os.getenv('PG_USER'),
     'password': os.getenv('PG_PASS'),
@@ -245,3 +249,46 @@ async def check_user_promo(pool, promo_code):
             current_date
         )
     return result
+
+
+async def upload_users_database(pool, bot, admin_id):
+    """
+    Выгружает данные из таблицы users в CSV и отправляет администратору.
+    """
+    os.makedirs(TEMP_DIR, exist_ok=True)
+
+    csv_file_path = os.path.join(TEMP_DIR, "users_export.csv")
+
+    headers = ["id", "tg_id", "fio", "contact", "email", "birthday", "product", "promo", "photo", "lucky_ticket"]
+
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch("SELECT * FROM users")
+
+            with open(csv_file_path, mode="w", newline="", encoding="utf-8") as csv_file:
+                writer = csv.writer(csv_file)
+
+                writer.writerow(headers)
+
+                for row in rows:
+                    writer.writerow([
+                        row["id"],
+                        row["tg_id"],
+                        row["fio"],
+                        row["contact"],
+                        row["email"],
+                        row["birthday"],
+                        ",".join(row["product"] or []),
+                        ",".join(row["promo"] or []),
+                        ",".join(row["photo"] or []),
+                        ",".join(row["lucky_ticket"] or []),
+                    ])
+
+        await bot.send_document(admin_id, InputFile(csv_file_path), caption="Экспорт пользователей из БД")
+
+    except Exception as e:
+        await bot.send_message(admin_id, f"Ошибка при экспорте данных: {e}")
+
+    finally:
+        if os.path.exists(csv_file_path):
+            os.remove(csv_file_path)

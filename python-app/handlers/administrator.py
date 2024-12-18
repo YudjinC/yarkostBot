@@ -15,6 +15,14 @@ load_dotenv()
 admin = int(os.getenv('ADMIN_ID'))
 
 
+async def upload_users_db(message: types.Message):
+    pool = await message.bot.get('pg_pool')
+    await message.answer(
+        f'Начинаю выгрузку БД, дождитесь сообщения!'
+    )
+    await db.upload_users_database(pool, message.bot, message.chat.id)
+
+
 async def promo_codes(message: types.Message):
     await botStages.AdminScreenPlay.admin_promo.set()
     await message.answer(
@@ -206,13 +214,17 @@ async def admin_play(message: types.Message):
 
 
 def register_administrator_handlers(dp: Dispatcher):
+    dp.register_message_handler(upload_users_db, state=botStages.AdminScreenPlay.admin_start,
+                                text=['Выгрузить базу данных пользователей'])
     dp.register_message_handler(promo_codes, state=botStages.AdminScreenPlay.admin_start, text=['Промокоды'])
-    dp.register_message_handler(promo_select, state=botStages.AdminScreenPlay.admin_promo, text=['Вывести список промокодов'])
+    dp.register_message_handler(promo_select, state=botStages.AdminScreenPlay.admin_promo,
+                                text=['Вывести список промокодов'])
     dp.register_message_handler(promo_add, state=botStages.AdminScreenPlay.admin_promo, text=['Добавить промокод'])
     dp.register_message_handler(promo_change, state=botStages.AdminScreenPlay.admin_promo, text=['Изменить промокод'])
     dp.register_message_handler(promo_add_process_cancel, state=botStages.AdminScreenPlay.admin_promo_add, text=['Назад'])
     dp.register_message_handler(promo_add_process, state=botStages.AdminScreenPlay.admin_promo_add)
-    dp.register_message_handler(promo_change_process_cancel, state=botStages.AdminScreenPlay.admin_promo_change, text=['Назад'])
+    dp.register_message_handler(promo_change_process_cancel, state=botStages.AdminScreenPlay.admin_promo_change,
+                                text=['Назад'])
     dp.register_message_handler(promo_change_process, state=botStages.AdminScreenPlay.admin_promo_change)
     dp.register_message_handler(promo_cancel, state=botStages.AdminScreenPlay.admin_promo, text=['Назад'])
     dp.register_message_handler(admin_play, state=botStages.AdminScreenPlay.admin_start)
