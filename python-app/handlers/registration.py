@@ -23,10 +23,10 @@ shared_data = {"photos": []}
 state_lock = asyncio.Lock()
 
 
-async def play(callback_query: types.CallbackQuery, message: types.Message, state: FSMContext):
+async def play(callback_query: types.CallbackQuery, state: FSMContext):
     if callback_query.data == 'play':
         async with state.proxy() as data:
-            data['tg_id'] = message.from_user.id
+            data['tg_id'] = callback_query.from_user.id
         await botStages.UserRegistrationScreenplay.fio.set()
         await callback_query.bot.send_message(
             chat_id=callback_query.from_user.id,
