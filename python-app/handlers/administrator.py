@@ -33,7 +33,7 @@ async def input_promo_for_upload(message: types.Message):
 
 async def upload_users_db_with_promo(message: types.Message):
     pool = await message.bot.get('pg_pool')
-    promo_code = message.text
+    promo_code = message.text.strip()
     exist = await db.select_one_promo(pool, promo_code)
     if not exist:
         await message.answer(
@@ -50,11 +50,11 @@ async def upload_users_db_with_promo(message: types.Message):
 
 
 async def upload_users_db_with_promo_cancel(message: types.Message):
-    await botStages.AdminScreenPlay.admin_start.set()
     await message.answer(
         f'Возвращаемся к основной панели.',
         reply_markup=kb.promoKeyboardAdmin
     )
+    await botStages.AdminScreenPlay.admin_start.set()
 
 
 async def promo_codes(message: types.Message):
@@ -72,14 +72,14 @@ async def promo_codes(message: types.Message):
 async def promo_select(message: types.Message):
     pool = await message.bot.get('pg_pool')
     try:
-        promo_codes = await db.select_promo(pool)
-        if not promo_codes:
+        promos = await db.select_promo(pool)
+        if not promos:
             await message.answer(
                 f'Нет активных промокодов.'
             )
             return
         promo_list = 'Ваши промокоды:\n'
-        for record in promo_codes:
+        for record in promos:
             promo_list += f"{record['code']}: {record['start_date']}, {record['end_date']}\n"
         await message.answer(promo_list)
     except Exception as e:
@@ -260,10 +260,12 @@ def register_administrator_handlers(dp: Dispatcher):
                                 text=['Вывести список промокодов'])
     dp.register_message_handler(promo_add, state=botStages.AdminScreenPlay.admin_promo, text=['Добавить промокод'])
     dp.register_message_handler(promo_change, state=botStages.AdminScreenPlay.admin_promo, text=['Изменить промокод'])
-    dp.register_message_handler(promo_add_process_cancel, state=botStages.AdminScreenPlay.admin_promo_add, text=['Назад'])
+    dp.register_message_handler(promo_add_process_cancel, state=botStages.AdminScreenPlay.admin_promo_add,
+                                text=['Назад'])
     dp.register_message_handler(promo_add_process, state=botStages.AdminScreenPlay.admin_promo_add)
     dp.register_message_handler(promo_change_process_cancel, state=botStages.AdminScreenPlay.admin_promo_change,
                                 text=['Назад'])
     dp.register_message_handler(promo_change_process, state=botStages.AdminScreenPlay.admin_promo_change)
-    dp.register_message_handler(promo_cancel, state=botStages.AdminScreenPlay.admin_promo, text=['Назад'])
+    dp.register_message_handler(promo_cancel, state=botStages.AdminScreenPlay.admin_promo,
+                                text=['Назад'])
     dp.register_message_handler(admin_play, state=botStages.AdminScreenPlay.admin_start)
