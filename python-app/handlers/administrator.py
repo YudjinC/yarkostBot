@@ -23,6 +23,14 @@ async def upload_users_db(message: types.Message):
     await db.upload_users_database(pool, message.bot, message.chat.id)
 
 
+async def upload_users_db_with_promo(message: types.Message):
+    pool = await message.bot.get('pg_pool')
+    await message.answer(
+        f'Начинаю выгрузку БД, дождитесь сообщения!'
+    )
+    await db.upload_users_database_with_promo(pool, message.bot, message.chat.id)
+
+
 async def promo_codes(message: types.Message):
     await botStages.AdminScreenPlay.admin_promo.set()
     await message.answer(
@@ -216,6 +224,8 @@ async def admin_play(message: types.Message):
 def register_administrator_handlers(dp: Dispatcher):
     dp.register_message_handler(upload_users_db, state=botStages.AdminScreenPlay.admin_start,
                                 text=['Выгрузить базу данных пользователей'])
+    dp.register_message_handler(upload_users_db_with_promo, state=botStages.AdminScreenPlay.admin_start,
+                                text=['Выгрузить по промокоду'])
     dp.register_message_handler(promo_codes, state=botStages.AdminScreenPlay.admin_start, text=['Промокоды'])
     dp.register_message_handler(promo_select, state=botStages.AdminScreenPlay.admin_promo,
                                 text=['Вывести список промокодов'])

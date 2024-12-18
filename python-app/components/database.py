@@ -292,3 +292,48 @@ async def upload_users_database(pool, bot, admin_id):
     finally:
         if os.path.exists(csv_file_path):
             os.remove(csv_file_path)
+
+
+async def upload_users_database_with_promo(pool, bot, admin_id, promo):
+    os.makedirs(TEMP_DIR, exist_ok=True)
+
+    csv_file_path = os.path.join(TEMP_DIR, "users_export.csv")
+
+    headers = ["id", "tg_id", "fio", "contact", "email", "birthday", "product", "promo", "photo", "lucky_ticket"]
+
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT * 
+                FROM users
+                WHERE $1 = ANY(promo);
+                """,
+                promo
+            )
+            with open(csv_file_path, mode="w", newline="", encoding="utf-8") as csv_file:
+                writer = csv.writer(csv_file)
+
+                writer.writerow(headers)
+
+                for row in rows:
+                    writer.writerow([
+                        row["id"],
+                        row["tg_id"],
+                        row["fio"],
+                        row["contact"],
+                        row["email"],
+                        row["birthday"],
+                        ",".join(row["product"] or []),
+                        ",".join(row["promo"] or []),
+                        ",".join(row["photo"] or []),
+                        ",".join(row["lucky_ticket"] or []),
+                    ])
+        await bot.send_document(admin_id, InputFile(csv_file_path), caption="Экспорт пользователей из БД по промокоду")
+
+    except Exception as e:
+        await bot.send_message(admin_id, f"Ошибка при экспорте данных: {e}")
+
+    finally:
+        if os.path.exists(csv_file_path):
+            os.remove(csv_file_path)
