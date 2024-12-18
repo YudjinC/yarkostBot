@@ -50,6 +50,16 @@ async def db_start(pool):
             )
             """
         )
+        await conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS admins (
+            id SERIAL PRIMARY KEY,
+            tg_id BIGINT UNIQUE NOT NULL, -- Telegram ID администратора
+            fio TEXT, -- Имя администратора
+            created_at TIMESTAMP DEFAULT NOW()
+            )
+            """
+        )
 
 
 async def cmd_start_db(pool, user_id):
@@ -57,6 +67,22 @@ async def cmd_start_db(pool, user_id):
         user = await conn.fetchrow("SELECT * FROM users WHERE tg_id = $1", user_id)
         if not user:
             await conn.execute("INSERT INTO users (tg_id) VALUES ($1)", user_id)
+
+
+async def is_admin_user(pool, tg_id):
+    """
+    Проверяет, является ли пользователь администратором.
+    """
+    async with pool.acquire() as conn:
+        query = """
+        SELECT EXISTS(
+            SELECT 1 
+            FROM admins 
+            WHERE tg_id = $1
+        )
+        """
+        result = await conn.fetchval(query, tg_id)
+    return result
 
 
 async def registration_with_photos(pool, state, shared_data, user_id):
