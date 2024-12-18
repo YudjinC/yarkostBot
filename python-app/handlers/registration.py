@@ -117,7 +117,8 @@ async def add_purchase_location(message: types.Message, state: FSMContext):
             photo=InputFile('photos/marketplaces.jpg'),
             caption=f'💖 Оставьте честный отзыв о спрей-гидролат от YARKOST\n'
                     f'📎Прикрепите здесь 2 скрина:\n'
-                    f'чек об оплате с маркетплейса и отзыв с артикулом товара, воспользовавшись скрепкой около клавиатуры.',
+                    f'чек об оплате с маркетплейса и отзыв с артикулом товара, '
+                    f'воспользовавшись скрепкой около клавиатуры.',
             reply_markup=ReplyKeyboardRemove()
         )
         await botStages.UserRegistrationScreenplay.photo_upload.set()
@@ -127,14 +128,14 @@ async def add_promo(message: types.Message, state: FSMContext):
     promo = message.text.strip()
     if re.match(PROMO_PATTERN, promo):
         pool = await message.bot.get('pg_pool')
-        result = await db.select_one_promo(pool, promo)
+        result = await db.check_user_promo(pool, promo)
         if result:
             async with state.proxy() as data:
                 data['promo'] = promo
             await add_lucky_ticket(message, state)
         else:
             await message.answer(
-                f'К сожалению, мы не нашли ваш промокод😭\n'
+                f'К сожалению, мы не нашли ваш промокод, либо он не соответствует времени действия промокода😭\n'
                 f'Попробуйте ещё раз или нажмите "Отмена"'
             )
     else:
@@ -211,8 +212,8 @@ async def finalize_photos(message: types.Message, state: FSMContext):
 
 
 async def add_lucky_ticket(message: types.Message, state: FSMContext):
-    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
     pool = await message.bot.get('pg_pool')
+    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
     async with state.proxy() as data:
         data['lucky_ticket'] = random_string
     if data.get('promo'):

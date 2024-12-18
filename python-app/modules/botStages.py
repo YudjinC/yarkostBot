@@ -15,7 +15,9 @@ class UserRegistrationScreenplay(StatesGroup):
 class UserAdvancedScreenplay(StatesGroup):
     advanced = State()
     advanced_product = State()
-    advanced_photo = State()
+    advanced_purchase_location = State()
+    advanced_promo = State()
+    advanced_photo_upload = State()
 
 
 class AdminScreenPlay(StatesGroup):

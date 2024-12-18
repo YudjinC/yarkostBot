@@ -1,7 +1,6 @@
 import asyncpg
 
-from datetime import date
-import logging
+from datetime import datetime, date
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -126,6 +125,24 @@ async def additional_with_photos(pool, state, shared_data, user_id):
             )
 
 
+async def additional_with_promo(pool, state, user_id):
+    async with pool.acquire() as conn:
+        async with state.proxy() as data:
+            await conn.execute(
+                """
+                UPDATE users
+                SET product = COALESCE(product, ARRAY[]::TEXT[]) || $1,
+                    promo = COALESCE(promo, ARRAY[]::TEXT[]) || $2,
+                    lucky_ticket = COALESCE(lucky_ticket, ARRAY[]::TEXT[]) || $3
+                WHERE tg_id = $4
+                """,
+                [data['product']],
+                [data['promo']],
+                [data['lucky_ticket']],
+                user_id
+            )
+
+
 async def check_advanced_state(pool, user_id):
     async with pool.acquire() as conn:
         result = await conn.fetchrow(
@@ -211,3 +228,20 @@ async def update_promo(pool, promo_code: str, start_date: date, end_date: date):
             end_date,
             promo_code
         )
+
+
+async def check_user_promo(pool, promo_code):
+    async with pool.acquire() as conn:
+        current_date = datetime.now().date()
+        result = await conn.fetchrow(
+            """
+            SELECT code, start_date, end_date 
+            FROM promo_codes
+            WHERE code = $1
+              AND start_date <= $2
+              AND end_date >= $2
+            """,
+            promo_code,
+            current_date
+        )
+    return result
