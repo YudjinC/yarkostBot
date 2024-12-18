@@ -33,10 +33,10 @@ async def db_start(pool):
                 contact TEXT,
                 email TEXT,
                 birthday TEXT,
-                product,
-                promo,
+                product TEXT,
+                promo TEXT,
                 photo TEXT[],
-                lucky_ticket
+                lucky_ticket TEXT
             )
             """
         )
@@ -60,13 +60,6 @@ async def db_start(pool):
             )
             """
         )
-
-
-# async def cmd_start_db(pool, user_id):
-#     async with pool.acquire() as conn:
-#         user = await conn.fetchrow("SELECT * FROM users WHERE tg_id = $1", user_id)
-#         if not user:
-#             await conn.execute("INSERT INTO users (tg_id) VALUES ($1)", user_id)
 
 
 async def is_admin_user(pool, tg_id):
