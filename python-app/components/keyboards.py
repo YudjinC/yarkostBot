@@ -4,21 +4,24 @@ from aiogram.types import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeybo
 playerInline = InlineKeyboardMarkup(row_width=1)
 playerInline.add(InlineKeyboardButton(text='УЧАСТВУЮ', callback_data='play'))
 
+# backward button
+backwardInline = InlineKeyboardMarkup(text='Назад')
+
 # cancel button
-cancelInline = InlineKeyboardMarkup(text='Назад')
+cancelInline = InlineKeyboardMarkup(text='Отмена')
 
 # share contact keyboard
 shareContactKeyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 contactButtonInline = InlineKeyboardButton('Поделиться контактом', request_contact=True)
-shareContactKeyboard.add(contactButtonInline)
+shareContactKeyboard.add(contactButtonInline).add(cancelInline)
 
 # select product keyboard
 productKeyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-productKeyboard.add('Сыворотка').add('Шампунь').add('Спрей-гидролат').add('Мыло').add('Масло-суфле')
+productKeyboard.add('Сыворотка').add('Шампунь').add('Спрей-гидролат').add('Мыло').add('Масло-суфле').add(cancelInline)
 
 # choice purchase location
 purchaseLocationKeyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-purchaseLocationKeyboard.add('Маркет').add('Маркетплейс')
+purchaseLocationKeyboard.add('Маркет').add('Маркетплейс').add(cancelInline)
 
 # advertising buttons
 marketsInline = InlineKeyboardMarkup(row_width=3)
@@ -40,7 +43,11 @@ mainKeyboardAdmin.add('Выгрузить базу данных пользова
 
 # admin promo keyboard
 promoKeyboardAdmin = ReplyKeyboardMarkup(resize_keyboard=True)
-promoKeyboardAdmin.add('Вывести список промокодов').add('Добавить промокод').add('Изменить промокод').add(cancelInline)
+promoKeyboardAdmin.add('Вывести список промокодов').add('Добавить промокод').add('Изменить промокод').add(backwardInline)
+
+# backward keyboard
+backwardKeyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+backwardKeyboard.add(backwardInline)
 
 # cancel keyboard
 cancelKeyboard = ReplyKeyboardMarkup(resize_keyboard=True)
