@@ -259,6 +259,8 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 
 
 def register_registration_handlers(dp: Dispatcher):
+    dp.register_message_handler(cancel_handler, state="*", content_types=types.ContentType.TEXT,
+                                text=['Отмена'])
     dp.register_callback_query_handler(play, lambda c: c.data == 'play')
     dp.register_message_handler(add_nickname, state=botStages.UserRegistrationScreenplay.fio,
                                 content_types=types.ContentType.TEXT)
@@ -280,5 +282,3 @@ def register_registration_handlers(dp: Dispatcher):
                                 content_types=types.ContentType.DOCUMENT)
     dp.register_message_handler(add_photos, state=botStages.UserRegistrationScreenplay.photo_upload,
                                 content_types=types.ContentType.PHOTO)
-    dp.register_message_handler(cancel_handler, state="*", content_types=types.ContentType.TEXT,
-                                text=['Отмена'])
