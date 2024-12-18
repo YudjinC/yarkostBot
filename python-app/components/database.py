@@ -173,17 +173,16 @@ async def personal_account(pool, user_id):
     async with pool.acquire() as conn:
         result = await conn.fetchrow(
             """
-            SELECT fio, lucky_ticket
+            SELECT fio, STRING_AGG(lucky_ticket, E'\n') AS lucky_tickets
             FROM users
             WHERE tg_id = $1
+            GROUP BY fio
             """,
             user_id
         )
-        lucky_tickets = result["lucky_ticket"]
-        tickets_text = "\n".join(lucky_tickets)
         return {
-            "fio": result['fio'],
-            "tickets": tickets_text
+            "fio": result["fio"],
+            "tickets": result["lucky_tickets"]
         }
 
 
