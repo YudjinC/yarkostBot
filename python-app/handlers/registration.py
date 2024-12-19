@@ -123,6 +123,7 @@ async def add_purchase_location(message: types.Message, state: FSMContext):
             reply_markup=kb.cancelKeyboard
         )
         await botStages.UserRegistrationScreenplay.photo_upload.set()
+        user_shared_data[message.from_user.id] = {"photos": []}
 
 
 async def add_promo(message: types.Message, state: FSMContext):
