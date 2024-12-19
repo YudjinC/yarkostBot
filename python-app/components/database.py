@@ -291,12 +291,20 @@ async def upload_users_database(pool, bot, admin_id):
         async with pool.acquire() as conn:
             rows = await conn.fetch("SELECT * FROM users")
 
-            with open(csv_file_path, mode="w", newline="", encoding="utf-8") as csv_file:
+            with open(csv_file_path, mode="w", newline="", encoding="utf-8-sig") as csv_file:
                 writer = csv.writer(csv_file)
 
+                # Запись заголовков
                 writer.writerow(headers)
 
                 for row in rows:
+                    # Преобразуем массивы в строки, разделённые запятой или символом новой строки
+                    products = "\n".join(row["product"]) if row["product"] else ""
+                    promos = "\n".join(row["promo"]) if row["promo"] else ""
+                    photos = "\n".join(row["photo"]) if row["photo"] else ""
+                    lucky_tickets = "\n".join(row["lucky_ticket"]) if isinstance(row["lucky_ticket"], list) else row["lucky_ticket"]
+
+                    # Записываем строку данных в CSV
                     writer.writerow([
                         row["id"],
                         row["tg_id"],
@@ -304,12 +312,13 @@ async def upload_users_database(pool, bot, admin_id):
                         row["contact"],
                         row["email"],
                         row["birthday"],
-                        ",".join(row["product"] or []),
-                        ",".join(row["promo"] or []),
-                        ",".join(row["photo"] or []),
-                        ",".join(row["lucky_ticket"] or []),
+                        products,
+                        promos,
+                        photos,
+                        lucky_tickets
                     ])
 
+        # Отправка CSV администратору
         await bot.send_document(admin_id, InputFile(csv_file_path), caption="Экспорт пользователей из БД")
 
     except Exception as e:
@@ -337,12 +346,19 @@ async def upload_users_database_with_promo(pool, bot, admin_id, promo):
                 """,
                 promo
             )
-            with open(csv_file_path, mode="w", newline="", encoding="utf-8") as csv_file:
+            with open(csv_file_path, mode="w", newline="", encoding="utf-8-sig") as csv_file:
                 writer = csv.writer(csv_file)
 
                 writer.writerow(headers)
 
                 for row in rows:
+                    # Преобразуем массивы в строки, разделённые запятой или символом новой строки
+                    products = "\n".join(row["product"] or [])
+                    promos = "\n".join(row["promo"] or [])
+                    photos = "\n".join(row["photo"] or [])
+                    lucky_tickets = "\n".join(row["lucky_ticket"] or []) if isinstance(row["lucky_ticket"], list) else row["lucky_ticket"]
+
+                    # Записываем строку данных в CSV
                     writer.writerow([
                         row["id"],
                         row["tg_id"],
@@ -350,10 +366,10 @@ async def upload_users_database_with_promo(pool, bot, admin_id, promo):
                         row["contact"],
                         row["email"],
                         row["birthday"],
-                        ",".join(row["product"] or []),
-                        ",".join(row["promo"] or []),
-                        ",".join(row["photo"] or []),
-                        ",".join(row["lucky_ticket"] or []),
+                        products,
+                        promos,
+                        photos,
+                        lucky_tickets
                     ])
         await bot.send_document(admin_id, InputFile(csv_file_path), caption="Экспорт пользователей из БД по промокоду")
 
