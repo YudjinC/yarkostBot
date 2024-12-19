@@ -352,6 +352,13 @@ async def upload_users_database_with_promo(pool, bot, admin_id, promo):
                 writer.writerow(headers)
 
                 for row in rows:
+                    # Преобразуем массивы в строки, разделённые запятой или символом новой строки
+                    products = "\n".join(row["product"] or [])
+                    promos = "\n".join(row["promo"] or [])
+                    photos = "\n".join(row["photo"] or [])
+                    lucky_tickets = "\n".join(row["lucky_ticket"] or []) if isinstance(row["lucky_ticket"], list) else row["lucky_ticket"]
+
+                    # Записываем строку данных в CSV
                     writer.writerow([
                         row["id"],
                         row["tg_id"],
@@ -359,10 +366,10 @@ async def upload_users_database_with_promo(pool, bot, admin_id, promo):
                         row["contact"],
                         row["email"],
                         row["birthday"],
-                        ",".join(row["product"] or []),
-                        ",".join(row["promo"] or []),
-                        ",".join(row["photo"] or []),
-                        ",".join(row["lucky_ticket"] or []),
+                        products,
+                        promos,
+                        photos,
+                        lucky_tickets
                     ])
         await bot.send_document(admin_id, InputFile(csv_file_path), caption="Экспорт пользователей из БД по промокоду")
 
