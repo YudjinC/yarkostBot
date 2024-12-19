@@ -298,7 +298,13 @@ async def upload_users_database(pool, bot, admin_id):
                 writer.writerow(headers)
 
                 for row in rows:
-                    # Записываем основную информацию о пользователе
+                    # Преобразуем массивы в строки, разделённые запятой или символом новой строки
+                    products = "\n".join(row["product"]) if row["product"] else ""
+                    promos = "\n".join(row["promo"]) if row["promo"] else ""
+                    photos = "\n".join(row["photo"]) if row["photo"] else ""
+                    lucky_tickets = "\n".join(row["lucky_ticket"]) if isinstance(row["lucky_ticket"], list) else row["lucky_ticket"]
+
+                    # Записываем строку данных в CSV
                     writer.writerow([
                         row["id"],
                         row["tg_id"],
@@ -306,38 +312,11 @@ async def upload_users_database(pool, bot, admin_id):
                         row["contact"],
                         row["email"],
                         row["birthday"],
-                        None,  # product будет записан отдельно
-                        None,  # promo будет записан отдельно
-                        None,  # photo будет записан отдельно
-                        None   # lucky_ticket будет записан отдельно
+                        products,
+                        promos,
+                        photos,
+                        lucky_tickets
                     ])
-
-                    # Если есть массив product, записываем каждое на новой строке
-                    if row["product"]:
-                        for product in row["product"]:
-                            writer.writerow([
-                                None, None, None, None, None, None, product, None, None, None
-                            ])
-
-                    # Если есть массив promo, записываем каждое на новой строке
-                    if row["promo"]:
-                        for promo in row["promo"]:
-                            writer.writerow([
-                                None, None, None, None, None, None, None, promo, None, None
-                            ])
-
-                    # Если есть массив photo, записываем каждое на новой строке
-                    if row["photo"]:
-                        for photo in row["photo"]:
-                            writer.writerow([
-                                None, None, None, None, None, None, None, None, photo, None
-                            ])
-
-                    # Если есть lucky_ticket, записываем его
-                    if row["lucky_ticket"]:
-                        writer.writerow([
-                            None, None, None, None, None, None, None, None, None, row["lucky_ticket"]
-                        ])
 
         # Отправка CSV администратору
         await bot.send_document(admin_id, InputFile(csv_file_path), caption="Экспорт пользователей из БД")
