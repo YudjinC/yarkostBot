@@ -60,6 +60,25 @@ async def db_start(pool):
             )
             """
         )
+        # Индексы для таблицы users
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_users_tg_id ON users(tg_id);")
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_users_product ON users USING GIN (product);")
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_users_promo ON users USING GIN (promo);")
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_users_lucky_ticket ON users USING GIN (lucky_ticket);")
+        await conn.execute(
+            """
+            CREATE EXTENSION IF NOT EXISTS pg_trgm;
+            CREATE INDEX IF NOT EXISTS idx_users_fio_trgm ON users USING GIN (fio gin_trgm_ops);
+            """
+        )
+        # Индексы для таблицы promo_codes
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON promo_codes(code);")
+        await conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_promo_codes_code_date_range 
+            ON promo_codes(code, start_date, end_date);
+            """
+        )
 
 
 async def cmd_start_db(pool, user_id):
