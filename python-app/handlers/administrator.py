@@ -305,7 +305,7 @@ def register_administrator_handlers(dp: Dispatcher):
                                 content_types=types.ContentType.TEXT)
     dp.register_message_handler(promo_cancel, state=botStages.AdminScreenPlay.admin_promo,
                                 text=['Назад'])
-    dp.register_message_handler(input_message_text, state=botStages.AdminScreenPlay.admin_send_messages,
+    dp.register_message_handler(input_message_text, state=botStages.AdminScreenPlay.admin_start,
                                 text=['Рассылка'])
     dp.register_message_handler(send_message_text_cancel, state=botStages.AdminScreenPlay.admin_send_messages,
                                 text=['Назад'])
