@@ -261,18 +261,17 @@ async def send_message_text(message: types.Message):
                              f'{message.text}')
         try:
             await message.bot.send_message(tg_id, personalized_text)
-            await message.answer(
-                f'Ваше сообщение отправлено:\n\n'
-                f'{personalized_text}',
-                reply_markup=kb.mainKeyboardAdmin
-            )
-            await botStages.AdminScreenPlay.admin_start.set()
         except Exception as e:
             await message.answer(
                 f"Не удалось отправить сообщение пользователю {tg_id}: {e}",
                 reply_markup=kb.mainKeyboardAdmin
             )
             await botStages.AdminScreenPlay.admin_start.set()
+    await message.answer(
+        f'Ваше сообщение успешно отправлено!!\n\n',
+        reply_markup=kb.mainKeyboardAdmin
+    )
+    await botStages.AdminScreenPlay.admin_start.set()
 
 
 async def send_message_text_cancel(message: types.Message):
