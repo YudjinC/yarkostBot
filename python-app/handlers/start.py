@@ -30,8 +30,6 @@ async def cmd_start(message: types.Message):
                     f'\_ Оставить отзыв о продукте YARKOST на сайте маркетплейса\.\n\n'
                     f'\*каждому участнику гарантированный подарок\! Победителей главных призов '
                     f'определим в @yarkostorganic в прямом эфире\.\n\n'
-                    f'{utils.conditionsLink} /\n'
-                    f'{utils.supportLink}\n\n'
                     f'Жмите кнопку УЧАСТВУЮ⬇'
                 ),
                 parse_mode=types.ParseMode.MARKDOWN_V2,

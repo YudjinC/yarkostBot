@@ -251,8 +251,6 @@ async def cancel_handler(message: types.Message, state: FSMContext):
             f'Все очень просто:\n\n'
             f'\_ Оставить отзыв о продукте YARKOST на сайте маркетплейса\.\n\n'
             f'\*каждому участнику гарантированный подарок\! Победителей главных призов определим в @yarkostorganic в прямом эфире\.\n\n'
-            f'{utils.conditionsLink} /\n'
-            f'{utils.supportLink}\n\n'
             f'Жмите кнопку УЧАСТВУЮ⬇'
         ),
         parse_mode=types.ParseMode.MARKDOWN_V2,
