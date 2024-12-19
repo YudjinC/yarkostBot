@@ -191,6 +191,7 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
     user_shared_data[user_id]['photos'].append(photo_url)
 
     current_state = await state.get_state()
+    logging.info(f"DEBUG INFO: {current_state}, {len(user_shared_data[user_id]['photos'])}, {user_shared_data[user_id]['photos']}")
     if (len(user_shared_data[user_id]['photos']) == 1) and (
             current_state == botStages.UserRegistrationScreenplay.photo_upload):
         await message.answer("✅ Поздравляю, первая фотография сохранена!")
@@ -267,7 +268,7 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 
 def register_registration_handlers(dp: Dispatcher):
     dp.register_message_handler(cancel_handler,
-                                state=[state for state in botStages.UserRegistrationScreenplay.states if state != botStages.UserRegistrationScreenplay.photo_upload],
+                                state=botStages.UserRegistrationScreenplay.states,
                                 content_types=types.ContentType.TEXT, text=['Отмена'])
     dp.register_callback_query_handler(play, lambda c: c.data == 'play')
     dp.register_message_handler(add_nickname, state=botStages.UserRegistrationScreenplay.fio,
