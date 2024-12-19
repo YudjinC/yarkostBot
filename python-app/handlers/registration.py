@@ -191,12 +191,11 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
     user_shared_data[user_id]['photos'].append(photo_url)
 
     current_state = await state.get_state()
-    logging.info(f"DEBUG INFO: {current_state}, {len(user_shared_data[user_id]['photos'])}, {user_shared_data[user_id]['photos']}")
     if (len(user_shared_data[user_id]['photos']) == 1) and (
-            current_state == botStages.UserRegistrationScreenplay.photo_upload):
+            current_state == botStages.UserRegistrationScreenplay.photo_upload.state):
         await message.answer("✅ Поздравляю, первая фотография сохранена!")
     elif (len(user_shared_data[user_id]['photos']) == MAX_PHOTOS) and (
-            current_state == botStages.UserRegistrationScreenplay.photo_upload):
+            current_state == botStages.UserRegistrationScreenplay.photo_upload.state):
         await message.answer("✅ Поздравляю, ваша вторая фотография сохранена!")
         await finalize_photos(message, state)
 
