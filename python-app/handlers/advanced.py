@@ -138,12 +138,8 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
     user_shared_data[user_id]['photos'].append(photo_url)
 
     current_state = await state.get_state()
-    if (len(user_shared_data[user_id]['photos']) == 1) and (
+    if (len(user_shared_data[user_id]['photos']) == MAX_PHOTOS) and (
             current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload.state):
-        await message.answer("✅ Поздравляю, первая фотография сохранена!")
-    elif (len(user_shared_data[user_id]['photos']) == MAX_PHOTOS) and (
-            current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload.state):
-        await message.answer("✅ Поздравляю, ваша вторая фотография сохранена!")
         await finalize_photos(message, state)
 
 
@@ -162,7 +158,6 @@ async def finalize_photos(message: types.Message, state: FSMContext):
     """
     Завершает обработку после сохранения двух фото.
     """
-    await message.answer("🎉 Спасибо! Обе фотографии загружены и сохранены.")
     logging.info(f"Финализированные фото: {user_shared_data[message.from_user.id]['photos']}")
     await additional_lucky_ticket(message, state)
 
