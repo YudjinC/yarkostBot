@@ -291,7 +291,7 @@ async def upload_users_database(pool, bot, admin_id):
         async with pool.acquire() as conn:
             rows = await conn.fetch("SELECT * FROM users")
 
-            with open(csv_file_path, mode="w", newline="", encoding="utf-8") as csv_file:
+            with open(csv_file_path, mode="w", newline="", encoding="utf-8-sig") as csv_file:
                 writer = csv.writer(csv_file)
 
                 # Запись заголовков
@@ -346,7 +346,7 @@ async def upload_users_database_with_promo(pool, bot, admin_id, promo):
                 """,
                 promo
             )
-            with open(csv_file_path, mode="w", newline="", encoding="utf-8") as csv_file:
+            with open(csv_file_path, mode="w", newline="", encoding="utf-8-sig") as csv_file:
                 writer = csv.writer(csv_file)
 
                 writer.writerow(headers)
