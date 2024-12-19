@@ -234,6 +234,45 @@ async def promo_cancel(message: types.Message):
     )
 
 
+async def input_message_text(message: types.Message):
+    await message.answer(
+        f'Вы хотите сделать рассылку для пользователей бота!\n'
+        f'Сообщение будет доставлено всем пользователям, у которых активен бот.\n\n'
+        f'Первую строку сообщения я отправлю сам в виде "Добрый день, <имя пользователя>!"\n'
+        f'А дальше вы:',
+        reply_markup=kb.backwardKeyboard
+    )
+    await botStages.AdminScreenPlay.admin_send_messages.set()
+
+
+async def send_message_text(message: types.Message):
+    pool = await message.bot.get('pg_pool')
+    result = await db.select_tg_id_and_gio(pool)
+    if not result:
+        await message.answer(
+            f'Упс, похоже, у нас ещё нет ни одного юзера...\n'
+            f'Возвращаю главное меню',
+            reply_markup=kb.mainKeyboardAdmin
+        )
+        await botStages.AdminScreenPlay.admin_start.set()
+        return
+    for tg_id, fio in result:
+        personalized_text = (f'Добрый день, {fio}!\n'
+                             f'{message.text}')
+        try:
+            await message.bot.send_message(tg_id, personalized_text)
+        except Exception as e:
+            await message.answer(f"Не удалось отправить сообщение пользователю {tg_id}: {e}")
+
+
+async def send_message_text_cancel(message: types.Message):
+    await botStages.AdminScreenPlay.admin_start.set()
+    await message.answer(
+        f'Возвращаеся к основной админ-панели.',
+        reply_markup=kb.mainKeyboardAdmin
+    )
+
+
 async def admin_play(message: types.Message):
     await message.answer(
         f'Вы авторизовались как администратор!',
@@ -249,7 +288,8 @@ def register_administrator_handlers(dp: Dispatcher):
     dp.register_message_handler(upload_users_db_with_promo_cancel,
                                 state=botStages.AdminScreenPlay.admin_upload_with_promo,
                                 text=['Назад'])
-    dp.register_message_handler(upload_users_db_with_promo, state=botStages.AdminScreenPlay.admin_upload_with_promo)
+    dp.register_message_handler(upload_users_db_with_promo, state=botStages.AdminScreenPlay.admin_upload_with_promo,
+                                content_types=types.ContentType.TEXT)
     dp.register_message_handler(promo_codes, state=botStages.AdminScreenPlay.admin_start, text=['Промокоды'])
     dp.register_message_handler(promo_select, state=botStages.AdminScreenPlay.admin_promo,
                                 text=['Вывести список промокодов'])
@@ -257,10 +297,18 @@ def register_administrator_handlers(dp: Dispatcher):
     dp.register_message_handler(promo_change, state=botStages.AdminScreenPlay.admin_promo, text=['Изменить промокод'])
     dp.register_message_handler(promo_add_process_cancel, state=botStages.AdminScreenPlay.admin_promo_add,
                                 text=['Назад'])
-    dp.register_message_handler(promo_add_process, state=botStages.AdminScreenPlay.admin_promo_add)
+    dp.register_message_handler(promo_add_process, state=botStages.AdminScreenPlay.admin_promo_add,
+                                content_types=types.ContentType.TEXT)
     dp.register_message_handler(promo_change_process_cancel, state=botStages.AdminScreenPlay.admin_promo_change,
                                 text=['Назад'])
-    dp.register_message_handler(promo_change_process, state=botStages.AdminScreenPlay.admin_promo_change)
+    dp.register_message_handler(promo_change_process, state=botStages.AdminScreenPlay.admin_promo_change,
+                                content_types=types.ContentType.TEXT)
     dp.register_message_handler(promo_cancel, state=botStages.AdminScreenPlay.admin_promo,
                                 text=['Назад'])
+    dp.register_message_handler(input_message_text, state=botStages.AdminScreenPlay.admin_send_messages,
+                                text=['Рассылка'])
+    dp.register_message_handler(send_message_text_cancel, state=botStages.AdminScreenPlay.admin_send_messages,
+                                text=['Назад'])
+    dp.register_message_handler(send_message_text, state=botStages.AdminScreenPlay.admin_send_messages,
+                                content_types=types.ContentType.TEXT)
     dp.register_message_handler(admin_play, state=botStages.AdminScreenPlay.admin_start)

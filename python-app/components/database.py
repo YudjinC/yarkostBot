@@ -379,3 +379,14 @@ async def upload_users_database_with_promo(pool, bot, admin_id, promo):
     finally:
         if os.path.exists(csv_file_path):
             os.remove(csv_file_path)
+
+
+async def select_tg_id_and_gio(pool):
+    async with pool.acquire() as conn:
+        result = await conn.fetchrow(
+            """
+            SELECT tg_id, fio 
+            FROM users
+            """
+        )
+    return result
