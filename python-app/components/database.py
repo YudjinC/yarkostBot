@@ -383,7 +383,7 @@ async def upload_users_database_with_promo(pool, bot, admin_id, promo):
 
 async def select_tg_id_and_gio(pool):
     async with pool.acquire() as conn:
-        result = await conn.fetchrow(
+        result = await conn.fetch(
             """
             SELECT tg_id, fio 
             FROM users
