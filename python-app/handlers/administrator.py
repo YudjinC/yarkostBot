@@ -262,7 +262,16 @@ async def send_message_text(message: types.Message):
         try:
             await message.bot.send_message(tg_id, personalized_text)
         except Exception as e:
-            await message.answer(f"Не удалось отправить сообщение пользователю {tg_id}: {e}")
+            await message.answer(
+                f"Не удалось отправить сообщение пользователю {tg_id}: {e}",
+                reply_markup=kb.mainKeyboardAdmin
+            )
+            await botStages.AdminScreenPlay.admin_start.set()
+    await message.answer(
+        f'Ваше сообщение успешно отправлено!!\n\n',
+        reply_markup=kb.mainKeyboardAdmin
+    )
+    await botStages.AdminScreenPlay.admin_start.set()
 
 
 async def send_message_text_cancel(message: types.Message):
@@ -305,7 +314,7 @@ def register_administrator_handlers(dp: Dispatcher):
                                 content_types=types.ContentType.TEXT)
     dp.register_message_handler(promo_cancel, state=botStages.AdminScreenPlay.admin_promo,
                                 text=['Назад'])
-    dp.register_message_handler(input_message_text, state=botStages.AdminScreenPlay.admin_send_messages,
+    dp.register_message_handler(input_message_text, state=botStages.AdminScreenPlay.admin_start,
                                 text=['Рассылка'])
     dp.register_message_handler(send_message_text_cancel, state=botStages.AdminScreenPlay.admin_send_messages,
                                 text=['Назад'])
