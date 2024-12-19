@@ -124,7 +124,6 @@ async def additional_photo(message: types.Message, state: FSMContext):
         await add_photo_to_queue(file_id, message, state)
 
 
-
 async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMContext):
     """
     Добавляет фото в очередь, проверяет лимит и выполняет финализацию.

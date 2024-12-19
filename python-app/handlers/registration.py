@@ -19,7 +19,7 @@ EMAIL_REGEX = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
 PROMO_PATTERN = r'^[a-zA-Zа-яА-Я0-9]+$'
 
 MAX_PHOTOS = 2
-shared_data = {"photos": []}
+user_shared_data = {}
 state_lock = asyncio.Lock()
 
 
@@ -180,19 +180,21 @@ async def add_photo_to_queue(file_id: str, message: types.Message, state: FSMCon
     """
     Добавляет фото в очередь, проверяет лимит и выполняет финализацию.
     """
-    # Проверяем лимит
-    if len(shared_data['photos']) >= MAX_PHOTOS:
+    user_id = message.from_user.id
+    if len(user_shared_data[user_id]['photos']) >= MAX_PHOTOS:
         logging.warning(f"Лимит фото достигнут. Игнорируем фото: {file_id}")
         return
 
-    # Добавляем фото и сохраняем
     logging.info(f"Добавляем фото: {file_id}")
     photo_url = await save_photo_to_storage(file_id, message)
-    shared_data['photos'].append(photo_url)
+    user_shared_data[user_id]['photos'].append(photo_url)
 
-    if len(shared_data['photos']) == 1:
+    current_state = await state.get_state()
+    if (len(user_shared_data[user_id]['photos']) == 1) and (
+            current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload.state):
         await message.answer("✅ Поздравляю, первая фотография сохранена!")
-    elif len(shared_data['photos']) == MAX_PHOTOS:
+    elif (len(user_shared_data[user_id]['photos']) == MAX_PHOTOS) and (
+            current_state == botStages.UserAdvancedScreenplay.advanced_photo_upload.state):
         await message.answer("✅ Поздравляю, ваша вторая фотография сохранена!")
         await finalize_photos(message, state)
 
@@ -214,7 +216,7 @@ async def finalize_photos(message: types.Message, state: FSMContext):
     Завершает обработку после сохранения двух фото.
     """
     await message.answer("🎉 Спасибо! Обе фотографии загружены и сохранены.")
-    logging.info(f"Финализированные фото: {shared_data['photos']}")
+    logging.info(f"Финализированные фото: {user_shared_data[message.from_user.id]['photos']}")
     await add_lucky_ticket(message, state)
 
 
@@ -226,7 +228,7 @@ async def add_lucky_ticket(message: types.Message, state: FSMContext):
     if data.get('promo'):
         await db.registration_with_promo(pool, state, message.from_user.id)
     else:
-        await db.registration_with_photos(pool, state, shared_data, message.from_user.id)
+        await db.registration_with_photos(pool, state, user_shared_data.get(message.from_user.id, {}), message.from_user.id)
     await state.finish()
     await message.answer(
         f'Начинаю проверку, секундочку...'
