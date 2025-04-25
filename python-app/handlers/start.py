@@ -25,7 +25,7 @@ async def cmd_start(message: types.Message):
                 message.chat.id,
                 photo=InputFile('photos/registration.jpg'),
                 caption=(
-                    f'💖💖 КАК ПОЛУЧИТЬ ПОДАРОК\?\n'
+                    f'КАК ПОЛУЧИТЬ ПОДАРОК\?\n'
                     f'Все очень просто:\n\n'
                     f'\_ Оставить отзыв о продукте YARKOST на сайте маркетплейса\.\n\n'
                     f'\*каждому участнику гарантированный подарок\! Победителей главного приза IPHONE '
