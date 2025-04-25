@@ -219,6 +219,8 @@ async def personal_account(pool, user_id):
             """,
             user_id
         )
+        if not result:
+            return None
         lucky_tickets = result["lucky_ticket"]
         tickets_text = "\n".join(lucky_tickets)
         return {

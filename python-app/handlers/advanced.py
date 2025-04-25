@@ -25,6 +25,12 @@ state_lock = asyncio.Lock()
 async def personal_account(message: types.Message):
     pool = await message.bot.get('pg_pool')
     personal_account_data = await db.personal_account(pool, message.from_user.id)
+    if personal_account_data is None:
+        await message.answer(
+            f'Данные не найдены. Мы обновили базу для следующего конкурса, '
+            f'попробуйте зарегестрировать новый купон.'
+            )
+        return
     await message.answer(
         f'{personal_account_data["fio"]}, это ваш личный кабинет!\n\n'
         f'Номера ваших счастливых билетиков:\n'
